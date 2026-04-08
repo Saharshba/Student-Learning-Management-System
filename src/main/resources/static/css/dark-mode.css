@@ -1,0 +1,113 @@
+/* Dark mode overrides only. Uses body.dark-mode to keep existing styles intact. */
+body.dark-mode {
+    color: #e5e7eb;
+    background: #0c111b;
+}
+body.dark-mode a {
+    color: #93c5fd;
+}
+body.dark-mode .topbar,
+body.dark-mode .hero-copy,
+body.dark-mode .hero-panel,
+body.dark-mode .capability-card,
+body.dark-mode .course-card,
+body.dark-mode .api-card,
+body.dark-mode .auth-card,
+body.dark-mode .dash-sidebar,
+body.dark-mode .dash-main,
+body.dark-mode .form-card,
+body.dark-mode .module-item,
+body.dark-mode .course-meta,
+body.dark-mode .account-table,
+body.dark-mode .data-table,
+body.dark-mode .auth-alert,
+body.dark-mode .auth-shell,
+body.dark-mode .dash-layout {
+    background: rgba(15, 23, 42, 0.94);
+    border-color: rgba(148, 163, 184, 0.18);
+}
+body.dark-mode .topbar {
+    background: rgba(15, 23, 42, 0.9);
+}
+body.dark-mode .button-primary {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+body.dark-mode .button-secondary,
+body.dark-mode .btn-refresh,
+body.dark-mode .btn-sm,
+body.dark-mode .dash-logout {
+    background: rgba(148, 163, 184, 0.12);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.28);
+}
+body.dark-mode .form-field input,
+body.dark-mode .form-field select,
+body.dark-mode .form-field textarea {
+    background: rgba(255, 255, 255, 0.06);
+    color: #e5e7eb;
+    border-color: rgba(148, 163, 184, 0.24);
+}
+body.dark-mode .provider-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #e5e7eb;
+}
+body.dark-mode .provider-facebook {
+    background: #1d4ed8;
+}
+body.dark-mode .auth-back,
+body.dark-mode .eyebrow,
+body.dark-mode .stat-label,
+body.dark-mode .panel-sub,
+body.dark-mode .course-meta dt,
+body.dark-mode .muted,
+body.dark-mode .sidebar-user {
+    color: #94a3b8;
+}
+body.dark-mode .pill {
+    background: rgba(148, 163, 184, 0.14);
+    color: #e2e8eb;
+}
+body.dark-mode .dash-nav-item {
+    color: #cbd5e1;
+}
+body.dark-mode .dash-nav-item.active {
+    background: rgba(148, 163, 184, 0.18);
+    color: #fff;
+}
+body.dark-mode .dash-logout {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(148, 163, 184, 0.2);
+}
+body.dark-mode .theme-toggle {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.18);
+}
+body.dark-mode .toast {
+    background: rgba(15, 23, 42, 0.96);
+    color: #e5e7eb;
+    border-color: rgba(148, 163, 184, 0.2);
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 10000;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(28, 26, 24, 0.12);
+    background: rgba(255, 255, 255, 0.92);
+    color: #111;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 18px 32px rgba(0, 0, 0, 0.12);
+    transition: transform 0.18s ease, background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+.theme-toggle:hover {
+    transform: translateY(-1px);
+}

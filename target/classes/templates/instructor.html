@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Dashboard – LMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/dark-mode.css">
+    <script defer src="/js/theme-toggle.js"></script>
+</head>
+<body class="dash-page">
+<script>try{ if(localStorage.getItem('lmsTheme')==='dark') document.body.classList.add('dark-mode'); }catch(e){}</script>
+
+<div class="dash-layout">
+    <!-- Sidebar -->
+    <aside class="dash-sidebar">
+        <a href="/" class="dash-brand">&#127979; Student LMS</a>
+        <div class="dash-role-badge instructor-badge">&#128196; Instructor</div>
+        <div id="sidebar-user" class="sidebar-user"></div>
+        <nav class="dash-nav">
+            <button class="dash-nav-item active" onclick="showTab('courses', this)">&#128218; My Courses</button>
+            <button class="dash-nav-item" onclick="showTab('content', this)">&#43; Add Content</button>
+            <button class="dash-nav-item" onclick="showTab('submissions', this)">&#128221; Submissions</button>
+        </nav>
+        <button class="dash-logout" onclick="logout()">&#128275; Sign out</button>
+    </aside>
+
+    <!-- Main content -->
+    <main class="dash-main">
+
+        <!-- My Courses Tab -->
+        <div id="tab-courses" class="tab-panel active">
+            <div class="panel-header">
+                <div>
+                    <h2>My Courses</h2>
+                    <p class="panel-sub">Courses assigned to you and their current structure.</p>
+                </div>
+                <button class="btn-refresh" onclick="loadCourses()">&#8635; Refresh</button>
+            </div>
+            <div id="courses-list" class="course-cards"></div>
+        </div>
+
+        <!-- Add Content Tab -->
+        <div id="tab-content" class="tab-panel">
+            <div class="panel-header">
+                <div><h2>Add Content</h2><p class="panel-sub">Add modules, materials, and assignments to your courses.</p></div>
+            </div>
+            <div class="forms-grid">
+
+                <!-- Add Module -->
+                <div class="form-card">
+                    <h3 class="form-card-title">&#128193; New Module</h3>
+                    <div class="form-field">
+                        <label>Course</label>
+                        <select id="mod-course"></select>
+                    </div>
+                    <div class="form-field">
+                        <label>Module Title</label>
+                        <input type="text" id="mod-title" placeholder="e.g., Week 1: Introduction">
+                    </div>
+                    <button class="btn-submit" onclick="addModule()">Create Module</button>
+                </div>
+
+                <!-- Add Material -->
+                <div class="form-card">
+                    <h3 class="form-card-title">&#128196; Upload Material</h3>
+                    <div class="form-field">
+                        <label>Course</label>
+                        <select id="mat-course" onchange="populateModules()"></select>
+                    </div>
+                    <div class="form-field">
+                        <label>Module</label>
+                        <select id="mat-module"></select>
+                    </div>
+                    <div class="form-field">
+                        <label>Material Name</label>
+                        <input type="text" id="mat-name" placeholder="e.g., Lecture Slides Week 1">
+                    </div>
+                    <div class="form-field">
+                        <label>Type</label>
+                        <select id="mat-type">
+                            <option value="PDF">PDF</option>
+                            <option value="VIDEO">VIDEO</option>
+                            <option value="LINK">LINK</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Content URL</label>
+                        <input type="text" id="mat-url" placeholder="https://example.com/file">
+                    </div>
+                    <button class="btn-submit" onclick="addMaterial()">Upload Material</button>
+                </div>
+
+                <!-- Add Assignment -->
+                <div class="form-card">
+                    <h3 class="form-card-title">&#128221; New Assignment</h3>
+                    <div class="form-field">
+                        <label>Course</label>
+                        <select id="asgn-course"></select>
+                    </div>
+                    <div class="form-field">
+                        <label>Description</label>
+                        <textarea id="asgn-desc" rows="3" placeholder="Describe the assignment…"></textarea>
+                    </div>
+                    <div class="form-field">
+                        <label>Deadline</label>
+                        <input type="datetime-local" id="asgn-deadline">
+                    </div>
+                    <button class="btn-submit" onclick="addAssignment()">Create Assignment</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submissions Tab -->
+        <div id="tab-submissions" class="tab-panel">
+            <div class="panel-header">
+                <div><h2>Submissions</h2><p class="panel-sub">Review and grade student submissions.</p></div>
+                <button class="btn-refresh" onclick="loadSubmissions()">&#8635; Refresh</button>
+            </div>
+            <div class="sub-controls">
+                <div class="form-field inline-field">
+                    <label>Course</label>
+                    <select id="sub-course" onchange="populateAssignments()"></select>
+                </div>
+                <div class="form-field inline-field">
+                    <label>Assignment</label>
+                    <select id="sub-assignment"></select>
+                </div>
+                <button class="btn-sm btn-primary" onclick="loadSubmissions()">Load</button>
+            </div>
+            <div id="submissions-list"></div>
+        </div>
+    </main>
+</div>
+
+<script>
+let user = null;
+let myCourses = [];
+
+function logout() {
+    sessionStorage.removeItem('lmsUser');
+    location.href = '/login.html';
+}
+
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'courses') loadCourses();
+    if (name === 'content') populateFormCourses();
+    if (name === 'submissions') populateSubCourses();
+}
+
+async function apiFetch(url, opts = {}) {
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Request failed' }));
+        throw new Error(err.message || 'Request failed');
+    }
+    return res.json();
+}
+
+function toast(msg, ok = true) {
+    const t = document.createElement('div');
+    t.className = 'toast ' + (ok ? 'toast-ok' : 'toast-err');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+}
+
+function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadCourses() {
+    const el = document.getElementById('courses-list');
+    el.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+        const all = await apiFetch('/api/students/courses');
+        myCourses = all.filter(c => String(c.instructorId) === String(user.userId));
+        if (!myCourses.length) { el.innerHTML = '<div class="empty-state">No courses assigned to you yet. Ask an admin to assign a course.</div>'; return; }
+        el.innerHTML = myCourses.map(c => {
+            const modulesHtml = (c.modules || []).map(m =>
+                `<div class="module-row">
+                    <strong>${esc(m.title)}</strong>
+                    <span class="muted">${(m.materials||[]).length} material(s)</span>
+                </div>`).join('');
+            const assignHtml = (c.assignments || []).map(a =>
+                `<div class="assign-row">
+                    <span class="assign-desc">${esc(a.description)}</span>
+                    <span class="muted small">Due: ${a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'} &nbsp;|&nbsp; ${a.submissions?.length || 0} submission(s)</span>
+                </div>`).join('');
+            return `<div class="dash-course-card">
+                <div class="course-card-header">
+                    <div>
+                        <span class="pill">Course #${c.courseId}</span>
+                        <h3>${esc(c.title)}</h3>
+                        <p class="muted">${esc(c.description)}</p>
+                    </div>
+                </div>
+                <div class="course-stats-row">
+                    <div class="cstat"><span>${(c.modules||[]).length}</span><label>Modules</label></div>
+                    <div class="cstat"><span>${(c.assignments||[]).length}</span><label>Assignments</label></div>
+                    <div class="cstat"><span>${(c.enrolledStudentIds||[]).length}</span><label>Students</label></div>
+                </div>
+                ${modulesHtml ? `<div class="section-label">Modules</div><div class="module-list-dash">${modulesHtml}</div>` : ''}
+                ${assignHtml ? `<div class="section-label">Assignments</div><div class="assign-list">${assignHtml}</div>` : ''}
+            </div>`;
+        }).join('');
+    } catch (e) {
+        el.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+function courseOptions() {
+    return myCourses.map(c => `<option value="${c.courseId}">${esc(c.title)}</option>`).join('');
+}
+
+function populateFormCourses() {
+    ['mod-course','mat-course','asgn-course'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = myCourses.length ? courseOptions() : '<option value="">No courses assigned</option>';
+    });
+    if (myCourses.length) populateModules();
+}
+
+function populateModules() {
+    const courseId = document.getElementById('mat-course').value;
+    const course = myCourses.find(c => String(c.courseId) === String(courseId));
+    const modules = course ? (course.modules || []) : [];
+    const el = document.getElementById('mat-module');
+    el.innerHTML = modules.length
+        ? modules.map(m => `<option value="${m.moduleId}">${esc(m.title)}</option>`).join('')
+        : '<option value="">No modules yet</option>';
+}
+
+function populateSubCourses() {
+    const el = document.getElementById('sub-course');
+    el.innerHTML = myCourses.length ? courseOptions() : '<option value="">No courses assigned</option>';
+    if (myCourses.length) populateAssignments();
+}
+
+function populateAssignments() {
+    const courseId = document.getElementById('sub-course').value;
+    const course = myCourses.find(c => String(c.courseId) === String(courseId));
+    const assigns = course ? (course.assignments || []) : [];
+    const el = document.getElementById('sub-assignment');
+    el.innerHTML = assigns.length
+        ? assigns.map(a => `<option value="${a.assignmentId}">${esc(a.description)}</option>`).join('')
+        : '<option value="">No assignments yet</option>';
+}
+
+async function addModule() {
+    const courseId = document.getElementById('mod-course').value;
+    const title = document.getElementById('mod-title').value.trim();
+    if (!title) { toast('Enter a module title.', false); return; }
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/modules?instructorId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title })
+        });
+        toast('Module created!');
+        document.getElementById('mod-title').value = '';
+        await refreshCourses();
+    } catch (e) { toast(e.message, false); }
+}
+
+async function addMaterial() {
+    const courseId = document.getElementById('mat-course').value;
+    const moduleId = document.getElementById('mat-module').value;
+    const name = document.getElementById('mat-name').value.trim();
+    const fileType = document.getElementById('mat-type').value;
+    const contentUrl = document.getElementById('mat-url').value.trim();
+    if (!name || !contentUrl) { toast('Fill in all material fields.', false); return; }
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/modules/${moduleId}/materials?instructorId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, fileType, contentUrl })
+        });
+        toast('Material uploaded!');
+        document.getElementById('mat-name').value = '';
+        document.getElementById('mat-url').value = '';
+        await refreshCourses();
+    } catch (e) { toast(e.message, false); }
+}
+
+async function addAssignment() {
+    const courseId = document.getElementById('asgn-course').value;
+    const description = document.getElementById('asgn-desc').value.trim();
+    const deadlineRaw = document.getElementById('asgn-deadline').value;
+    if (!description || !deadlineRaw) { toast('Fill in description and deadline.', false); return; }
+    const deadline = new Date(deadlineRaw).toISOString();
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/assignments?instructorId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description, deadline })
+        });
+        toast('Assignment created!');
+        document.getElementById('asgn-desc').value = '';
+        document.getElementById('asgn-deadline').value = '';
+        await refreshCourses();
+    } catch (e) { toast(e.message, false); }
+}
+
+async function refreshCourses() {
+    const all = await apiFetch('/api/students/courses').catch(() => []);
+    myCourses = all.filter(c => String(c.instructorId) === String(user.userId));
+}
+
+async function loadSubmissions() {
+    const el = document.getElementById('submissions-list');
+    const courseId = document.getElementById('sub-course').value;
+    const assignmentId = document.getElementById('sub-assignment').value;
+    if (!courseId || !assignmentId) { el.innerHTML = '<div class="empty-state">Select a course and assignment first.</div>'; return; }
+    el.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+        const subs = await apiFetch(`/api/instructor/courses/${courseId}/assignments/${assignmentId}/submissions?instructorId=${user.userId}`);
+        if (!subs.length) { el.innerHTML = '<div class="empty-state">No submissions yet for this assignment.</div>'; return; }
+        el.innerHTML = subs.map(s => `
+            <div class="submission-card">
+                <div class="sub-meta">
+                    <span class="pill">Sub #${s.submissionId}</span>
+                    <span class="muted small">Student #${s.studentId} &nbsp;|&nbsp; ${s.timestamp ? new Date(s.timestamp).toLocaleString() : '—'}</span>
+                </div>
+                <p class="sub-content">${esc(s.content)}</p>
+                ${s.grade !== null && s.grade !== undefined
+                    ? `<div class="already-graded">&#10003; Graded: <strong>${s.grade}/100</strong> — ${s.feedback ? esc(s.feedback) : 'No feedback'}</div>`
+                    : `<div class="grade-form">
+                        <input type="number" id="grade-${s.submissionId}" min="0" max="100" placeholder="Grade (0–100)" class="grade-input">
+                        <input type="text" id="fb-${s.submissionId}" placeholder="Feedback (optional)" class="feedback-input">
+                        <button class="btn-sm btn-primary" onclick="gradeSubmission(${courseId}, ${s.submissionId})">Save Grade</button>
+                       </div>`
+                }
+            </div>`).join('');
+    } catch (e) {
+        el.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+async function gradeSubmission(courseId, submissionId) {
+    const gradeVal = document.getElementById('grade-' + submissionId).value;
+    const feedback = document.getElementById('fb-' + submissionId).value.trim();
+    if (gradeVal === '') { toast('Enter a grade.', false); return; }
+    const grade = parseFloat(gradeVal);
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/submissions/${submissionId}/grade?instructorId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ grade, feedback })
+        });
+        toast('Grade saved!');
+        loadSubmissions();
+    } catch (e) { toast(e.message, false); }
+}
+
+(async function init() {
+    const raw = sessionStorage.getItem('lmsUser');
+    if (!raw) { location.href = '/login.html'; return; }
+    user = JSON.parse(raw);
+    if (user.role !== 'INSTRUCTOR') {
+        location.href = user.role === 'ADMINISTRATOR' ? '/dashboard/admin' : '/dashboard/student';
+        return;
+    }
+    document.getElementById('sidebar-user').textContent = user.name;
+    await loadCourses();
+    populateFormCourses();
+    populateSubCourses();
+})();
+</script>
+<button class="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+</body>
+</html>

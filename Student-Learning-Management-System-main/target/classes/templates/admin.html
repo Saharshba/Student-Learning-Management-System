@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard – LMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dash-page">
+
+<div class="dash-layout">
+    <!-- Sidebar -->
+    <aside class="dash-sidebar">
+        <a href="/" class="dash-brand">&#127979; Student LMS</a>
+        <div class="dash-role-badge admin-badge">&#128737; Admin</div>
+        <div id="sidebar-user" class="sidebar-user"></div>
+        <nav class="dash-nav">
+            <button class="dash-nav-item active" onclick="showTab('users', this)">&#128100; Users</button>
+            <button class="dash-nav-item" onclick="showTab('newuser', this)">&#43; Create User</button>
+            <button class="dash-nav-item" onclick="showTab('courses', this)">&#128218; Courses</button>
+            <button class="dash-nav-item" onclick="showTab('create', this)">&#43; Create Course</button>
+            <button class="dash-nav-item" onclick="showTab('report', this)">&#128202; Performance</button>
+        </nav>
+        <button class="dash-logout" onclick="logout()">&#128275; Sign out</button>
+    </aside>
+
+    <!-- Main content -->
+    <main class="dash-main">
+
+        <!-- Users Tab -->
+        <div id="tab-users" class="tab-panel active">
+            <div class="panel-header">
+                <div><h2>All Users</h2><p class="panel-sub">Everyone registered in the system.</p></div>
+                <button class="btn-refresh" onclick="loadUsers()">&#8635; Refresh</button>
+            </div>
+            <div id="users-content"></div>
+        </div>
+
+        <!-- Create User Tab -->
+        <div id="tab-newuser" class="tab-panel">
+            <div class="panel-header">
+                <div><h2>Create User</h2><p class="panel-sub">Register a new student, instructor, or administrator.</p></div>
+            </div>
+            <div class="form-card" style="max-width:480px">
+                <h3 class="form-card-title">&#128100; New User</h3>
+                <div class="form-field">
+                    <label>Role</label>
+                    <select id="nu-role">
+                        <option value="STUDENT">&#127891; Student</option>
+                        <option value="INSTRUCTOR">&#128196; Instructor</option>
+                        <option value="ADMINISTRATOR">&#128737; Administrator</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Full Name</label>
+                    <input type="text" id="nu-name" placeholder="e.g., Jane Smith">
+                </div>
+                <div class="form-field">
+                    <label>Email Address</label>
+                    <input type="email" id="nu-email" placeholder="jane@example.com">
+                </div>
+                <div class="form-field">
+                    <label>Password</label>
+                    <input type="password" id="nu-password" placeholder="At least 6 characters">
+                </div>
+                <div id="nu-error" class="auth-alert hidden"></div>
+                <button class="btn-submit" onclick="createUser()">Create User</button>
+            </div>
+        </div>
+
+        <!-- Courses Tab -->
+        <div id="tab-courses" class="tab-panel">
+            <div class="panel-header">
+                <div><h2>Course Management</h2><p class="panel-sub">View, delete courses, and assign instructors.</p></div>
+                <button class="btn-refresh" onclick="loadCourses()">&#8635; Refresh</button>
+            </div>
+            <div id="courses-content"></div>
+        </div>
+
+        <!-- Create Course Tab -->
+        <div id="tab-create" class="tab-panel">
+            <div class="panel-header">
+                <div><h2>Create Course</h2><p class="panel-sub">Add a new course to the catalog.</p></div>
+            </div>
+            <div class="form-card" style="max-width:480px">
+                <h3 class="form-card-title">&#128218; New Course</h3>
+                <div class="form-field">
+                    <label>Course Title</label>
+                    <input type="text" id="new-title" placeholder="e.g., Data Structures">
+                </div>
+                <div class="form-field">
+                    <label>Description</label>
+                    <textarea id="new-desc" rows="3" placeholder="Brief course overview…"></textarea>
+                </div>
+                <button class="btn-submit" onclick="createCourse()">Create Course</button>
+            </div>
+        </div>
+
+        <!-- Report Tab -->
+        <div id="tab-report" class="tab-panel">
+            <div class="panel-header">
+                <div><h2>Performance Report</h2><p class="panel-sub">System-wide enrollment and grading summary.</p></div>
+                <button class="btn-refresh" onclick="loadReport()">&#8635; Refresh</button>
+            </div>
+            <div id="report-content"></div>
+        </div>
+    </main>
+</div>
+
+<script>
+let user = null;
+let allUsers = [];
+let allCourses = [];
+
+function logout() {
+    sessionStorage.removeItem('lmsUser');
+    location.href = '/login';
+}
+
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'users') loadUsers();
+    if (name === 'courses') loadCourses();
+    if (name === 'report') loadReport();
+    if (name === 'newuser') { document.getElementById('nu-error').classList.add('hidden'); }
+}
+
+async function apiFetch(url, opts = {}) {
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Request failed' }));
+        throw new Error(err.message || 'Request failed');
+    }
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) return res.json();
+    return null;
+}
+
+function toast(msg, ok = true) {
+    const t = document.createElement('div');
+    t.className = 'toast ' + (ok ? 'toast-ok' : 'toast-err');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3200);
+}
+
+function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function roleBadge(role) {
+    const map = { STUDENT: 'badge-blue', INSTRUCTOR: 'badge-purple', ADMINISTRATOR: 'badge-orange' };
+    return `<span class="badge ${map[role] || ''}">${role}</span>`;
+}
+
+async function loadUsers() {
+    const el = document.getElementById('users-content');
+    el.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+        allUsers = await apiFetch(`/api/admin/users?adminId=${user.userId}`);
+        if (!allUsers.length) { el.innerHTML = '<div class="empty-state">No users found.</div>'; return; }
+        el.innerHTML = `<table class="data-table">
+            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+            <tbody>${allUsers.map(u => `<tr>
+                <td class="muted">#${u.userId}</td>
+                <td><strong>${esc(u.name)}</strong></td>
+                <td class="muted">${esc(u.email)}</td>
+                <td>${roleBadge(u.role)}</td>
+            </tr>`).join('')}</tbody>
+        </table>`;
+    } catch (e) {
+        el.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+async function createUser() {
+    const role = document.getElementById('nu-role').value;
+    const name = document.getElementById('nu-name').value.trim();
+    const email = document.getElementById('nu-email').value.trim();
+    const password = document.getElementById('nu-password').value;
+    const errDiv = document.getElementById('nu-error');
+    errDiv.classList.add('hidden');
+
+    if (!name || !email || !password) { errDiv.textContent = 'Please fill in all fields.'; errDiv.classList.remove('hidden'); return; }
+    if (password.length < 6) { errDiv.textContent = 'Password must be at least 6 characters.'; errDiv.classList.remove('hidden'); return; }
+
+    try {
+        const newUser = await apiFetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password, role })
+        });
+        toast(`${role.charAt(0) + role.slice(1).toLowerCase()} "${newUser.name}" created!`);
+        document.getElementById('nu-name').value = '';
+        document.getElementById('nu-email').value = '';
+        document.getElementById('nu-password').value = '';
+        await loadUsers();
+    } catch (e) {
+        errDiv.textContent = e.message;
+        errDiv.classList.remove('hidden');
+    }
+}
+
+async function loadCourses() {
+    const el = document.getElementById('courses-content');
+    el.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+        allCourses = await apiFetch(`/api/admin/courses?adminId=${user.userId}`);
+        const instructors = allUsers.filter(u => u.role === 'INSTRUCTOR');
+        if (!allCourses.length) { el.innerHTML = '<div class="empty-state">No courses yet. Create one!</div>'; return; }
+        el.innerHTML = allCourses.map(c => {
+            const assignedInstructor = allUsers.find(u => String(u.userId) === String(c.instructorId));
+            const instrOptions = instructors.map(i =>
+                `<option value="${i.userId}" ${String(i.userId) === String(c.instructorId) ? 'selected' : ''}>${esc(i.name)}</option>`
+            ).join('');
+            return `<div class="admin-course-row">
+                <div class="admin-course-info">
+                    <span class="pill">Course #${c.courseId}</span>
+                    <div>
+                        <strong>${esc(c.title)}</strong>
+                        <p class="muted small">${esc(c.description)}</p>
+                    </div>
+                    <div class="course-badges">
+                        <span class="badge badge-blue">${(c.enrolledStudentIds||[]).length} students</span>
+                        <span class="badge badge-purple">${(c.modules||[]).length} modules</span>
+                        ${assignedInstructor ? `<span class="badge badge-green">&#128196; ${esc(assignedInstructor.name)}</span>` : '<span class="badge">No instructor</span>'}
+                    </div>
+                </div>
+                <div class="admin-course-actions">
+                    ${instructors.length ? `
+                    <select id="instr-select-${c.courseId}" class="small-select">${instrOptions}</select>
+                    <button class="btn-sm btn-primary" onclick="assignInstructor(${c.courseId})">Assign</button>
+                    ` : ''}
+                    <button class="btn-sm btn-danger" onclick="deleteCourse(${c.courseId}, '${esc(c.title)}')">Delete</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        el.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+async function createCourse() {
+    const title = document.getElementById('new-title').value.trim();
+    const description = document.getElementById('new-desc').value.trim();
+    if (!title || !description) { toast('Fill in title and description.', false); return; }
+    try {
+        await apiFetch(`/api/admin/courses?adminId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description })
+        });
+        toast('Course created!');
+        document.getElementById('new-title').value = '';
+        document.getElementById('new-desc').value = '';
+    } catch (e) { toast(e.message, false); }
+}
+
+async function deleteCourse(courseId, title) {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    try {
+        await apiFetch(`/api/admin/courses/${courseId}?adminId=${user.userId}`, { method: 'DELETE' });
+        toast('Course deleted.');
+        loadCourses();
+    } catch (e) { toast(e.message, false); }
+}
+
+async function assignInstructor(courseId) {
+    const instructorId = document.getElementById('instr-select-' + courseId).value;
+    try {
+        await apiFetch(`/api/admin/courses/${courseId}/assign-instructor/${instructorId}?adminId=${user.userId}`, { method: 'POST' });
+        toast('Instructor assigned!');
+        loadCourses();
+    } catch (e) { toast(e.message, false); }
+}
+
+async function loadReport() {
+    const el = document.getElementById('report-content');
+    el.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+        const report = await apiFetch(`/api/admin/reports/performance?adminId=${user.userId}`);
+        el.innerHTML = `<div class="report-grid">${
+            Object.entries(report).map(([key, val]) => {
+                let display;
+                if (typeof val === 'object' && val !== null) {
+                    display = `<div class="report-sub-list">${
+                        Object.entries(val).map(([k, v]) =>
+                            `<div class="report-sub-row"><span class="muted">${esc(String(k))}</span><strong>${esc(String(v))}</strong></div>`
+                        ).join('')
+                    }</div>`;
+                } else {
+                    display = `<strong class="report-big">${esc(String(val))}</strong>`;
+                }
+                return `<div class="report-card"><div class="report-label">${esc(key)}</div>${display}</div>`;
+            }).join('')
+        }</div>`;
+    } catch (e) {
+        el.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+(async function init() {
+    const raw = sessionStorage.getItem('lmsUser');
+    if (!raw) { location.href = '/login'; return; }
+    user = JSON.parse(raw);
+    if (user.role !== 'ADMINISTRATOR') {
+        location.href = user.role === 'INSTRUCTOR' ? '/dashboard/instructor' : '/dashboard/student';
+        return;
+    }
+    document.getElementById('sidebar-user').textContent = user.name;
+    await loadUsers();
+    loadCourses();
+})();
+</script>
+</body>
+</html>

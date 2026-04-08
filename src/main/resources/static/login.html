@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In – Student LMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/dark-mode.css">
+    <script defer src="/js/theme-toggle.js"></script>
+</head>
+<body class="auth-page">
+<script>try{ if(localStorage.getItem('lmsTheme')==='dark') document.body.classList.add('dark-mode'); }catch(e){}</script>
+<div class="auth-shell">
+    <a class="auth-back" href="/">&#8592; Back to home</a>
+    <div class="auth-card">
+        <div class="auth-logo">&#127979;</div>
+        <h1 class="auth-title">Sign in to LMS</h1>
+        <p class="auth-sub">Choose a demo account or enter your credentials below.</p>
+
+        <div class="social-login">
+            <button type="button" class="provider-btn provider-google" onclick="socialLogin('google')">
+                <span class="provider-icon">G</span>
+                Continue with Google
+            </button>
+            <button type="button" class="provider-btn provider-facebook" onclick="socialLogin('facebook')">
+                <span class="provider-icon">f</span>
+                Continue with Facebook
+            </button>
+        </div>
+
+        <div class="quick-fills">
+            <button class="qf-btn qf-admin" onclick="fill('admin@lms.com','admin123')">&#128737; Admin</button>
+            <button class="qf-btn qf-instructor" onclick="fill('instructor@lms.com','teach123')">&#128196; Instructor</button>
+            <button class="qf-btn qf-student" onclick="fill('student@lms.com','learn123')">&#127891; Student</button>
+        </div>
+
+        <div class="auth-divider"><span>or enter manually</span></div>
+
+        <div id="auth-error" class="auth-alert hidden"></div>
+
+        <form id="login-form" autocomplete="off">
+            <div class="form-field">
+                <label for="email">Email address</label>
+                <input type="email" id="email" placeholder="you@example.com" required>
+            </div>
+            <div class="form-field">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-submit" id="submit-btn">Sign in</button>
+        </form>
+        <p class="auth-footer">Don't have an account? <a href="/register" class="auth-link">Create one</a></p>
+    </div>
+</div>
+
+<script>
+    function fill(email, password) {
+        document.getElementById('email').value = email;
+        document.getElementById('password').value = password;
+        document.getElementById('auth-error').classList.add('hidden');
+    }
+
+    async function authenticate(email, password, provider) {
+        const btn = document.getElementById('submit-btn');
+        const errDiv = document.getElementById('auth-error');
+        btn.textContent = provider ? `Signing in with ${provider}…` : 'Signing in…';
+        btn.disabled = true;
+        errDiv.classList.add('hidden');
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Invalid credentials. Please try again.');
+            sessionStorage.setItem('lmsUser', JSON.stringify(data));
+            const role = data.role;
+            if (role === 'ADMINISTRATOR') location.href = '/dashboard/admin';
+            else if (role === 'INSTRUCTOR') location.href = '/dashboard/instructor';
+            else location.href = '/dashboard/student';
+        } catch (err) {
+            errDiv.textContent = err.message;
+            errDiv.classList.remove('hidden');
+            btn.textContent = 'Sign in';
+            btn.disabled = false;
+        }
+    }
+
+    function socialLogin(provider) {
+        const mapping = {
+            google: { email: 'instructor@lms.com', password: 'teach123' },
+            facebook: { email: 'student@lms.com', password: 'learn123' }
+        };
+        const creds = mapping[provider];
+        if (!creds) return;
+        document.getElementById('email').value = creds.email;
+        document.getElementById('password').value = creds.password;
+        authenticate(creds.email, creds.password, provider.charAt(0).toUpperCase() + provider.slice(1));
+    }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        await authenticate(email, password);
+    });
+</script>
+<button class="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+</body>
+</html>
