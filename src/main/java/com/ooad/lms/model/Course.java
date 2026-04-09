@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Course {
-    private Long courseId;
-    private String title;
-    private String description;
+    private final Long courseId;
+    private final String title;
+    private final String description;
     private Long instructorId;
     private final List<Module> modules = new ArrayList<>();
     private final List<Assignment> assignments = new ArrayList<>();
+    private final List<Exam> exams = new ArrayList<>();
     private final List<Long> enrolledStudentIds = new ArrayList<>();
 
     public Course(Long courseId, String title, String description) {
@@ -28,6 +29,14 @@ public class Course {
 
     public void addAssignment(Assignment assignment) {
         assignments.add(assignment);
+    }
+
+    public void addExam(Exam exam) {
+        exams.add(exam);
+    }
+
+    public void removeExam(Long examId) {
+        exams.removeIf(exam -> exam.getExamId().equals(examId));
     }
 
     public void enrollStudent(Long studentId) {
@@ -54,6 +63,10 @@ public class Course {
 
     public List<Assignment> getAssignments() {
         return assignments;
+    }
+
+    public List<Exam> getExams() {
+        return exams;
     }
 
     public List<Long> getEnrolledStudentIds() {

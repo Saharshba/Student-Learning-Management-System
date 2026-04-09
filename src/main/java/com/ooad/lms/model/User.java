@@ -3,11 +3,11 @@ package com.ooad.lms.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public abstract class User {
-    private Long userId;
+    private final Long userId;
     private String name;
     private String email;
-    private String password;
-    private Role role;
+    private final String password;
+    private final Role role;
 
     protected User(Long userId, String name, String email, String password, Role role) {
         this.userId = userId;

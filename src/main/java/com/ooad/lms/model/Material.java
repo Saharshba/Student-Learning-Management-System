@@ -3,11 +3,11 @@ package com.ooad.lms.model;
 import java.time.LocalDateTime;
 
 public class Material {
-    private Long fileId;
-    private MaterialType fileType;
-    private LocalDateTime uploadDate;
-    private String name;
-    private String contentUrl;
+    private final Long fileId;
+    private final MaterialType fileType;
+    private final LocalDateTime uploadDate;
+    private final String name;
+    private final String contentUrl;
 
     public Material(Long fileId, MaterialType fileType, LocalDateTime uploadDate, String name, String contentUrl) {
         this.fileId = fileId;

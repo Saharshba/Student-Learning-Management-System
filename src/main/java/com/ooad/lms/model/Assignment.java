@@ -5,9 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Assignment {
-    private Long assignmentId;
-    private String description;
-    private LocalDateTime deadline;
+    private final Long assignmentId;
+    private final String description;
+    private final LocalDateTime deadline;
     private boolean published;
     private final List<Long> submissions = new ArrayList<>();
 

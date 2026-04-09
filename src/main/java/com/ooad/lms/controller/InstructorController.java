@@ -1,16 +1,7 @@
 package com.ooad.lms.controller;
 
-import com.ooad.lms.dto.CreateAssignmentRequest;
-import com.ooad.lms.dto.CreateModuleRequest;
-import com.ooad.lms.dto.GradeSubmissionRequest;
-import com.ooad.lms.dto.UploadMaterialRequest;
-import com.ooad.lms.model.Assignment;
-import com.ooad.lms.model.Material;
-import com.ooad.lms.model.Module;
-import com.ooad.lms.model.Submission;
-import com.ooad.lms.service.CourseService;
-import com.ooad.lms.service.InstructorService;
-import jakarta.validation.Valid;
+import java.util.List;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,7 +10,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.ooad.lms.dto.CreateAssignmentRequest;
+import com.ooad.lms.dto.CreateExamRequest;
+import com.ooad.lms.dto.CreateModuleRequest;
+import com.ooad.lms.dto.GradeSubmissionRequest;
+import com.ooad.lms.dto.UploadMaterialRequest;
+import com.ooad.lms.model.Assignment;
+import com.ooad.lms.model.Exam;
+import com.ooad.lms.model.Material;
+import com.ooad.lms.model.Module;
+import com.ooad.lms.model.Submission;
+import com.ooad.lms.service.CourseService;
+import com.ooad.lms.service.InstructorService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/instructor")
@@ -54,6 +58,15 @@ public class InstructorController {
             @Valid @RequestBody CreateAssignmentRequest request
     ) {
         return courseService.createAssignment(instructorId, courseId, request);
+    }
+
+    @PostMapping("/courses/{courseId}/exams")
+    public Exam createExam(
+            @PathVariable Long courseId,
+            @RequestParam Long instructorId,
+            @Valid @RequestBody CreateExamRequest request
+    ) {
+        return courseService.addExam(instructorId, courseId, request);
     }
 
     @GetMapping("/courses/{courseId}/assignments/{assignmentId}/submissions")

@@ -111,6 +111,39 @@
                     </div>
                     <button class="btn-submit" onclick="addAssignment()">Create Assignment</button>
                 </div>
+
+                <!-- Add Exam Schedule -->
+                <div class="form-card">
+                    <h3 class="form-card-title">&#128197; Add Exam Schedule</h3>
+                    <div class="form-field">
+                        <label>Course</label>
+                        <select id="exam-course"></select>
+                    </div>
+                    <div class="form-field">
+                        <label>Exam Title</label>
+                        <input type="text" id="exam-title" placeholder="e.g., Midterm Exam">
+                    </div>
+                    <div class="form-field">
+                        <label>Description</label>
+                        <textarea id="exam-desc" rows="3" placeholder="Write exam instructions and timetable notes."></textarea>
+                    </div>
+                    <div class="form-field">
+                        <label>Schedule</label>
+                        <input type="datetime-local" id="exam-schedule">
+                    </div>
+                    <div class="form-field">
+                        <label>File Type</label>
+                        <select id="exam-type">
+                            <option value="PDF">PDF</option>
+                            <option value="IMAGE">IMAGE</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>File URL</label>
+                        <input type="text" id="exam-url" placeholder="https://example.com/exam-schedule.pdf">
+                    </div>
+                    <button class="btn-submit" onclick="addExam()">Upload Exam Schedule</button>
+                </div>
             </div>
         </div>
 
@@ -195,6 +228,12 @@ async function loadCourses() {
                     <span class="assign-desc">${esc(a.description)}</span>
                     <span class="muted small">Due: ${a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'} &nbsp;|&nbsp; ${a.submissions?.length || 0} submission(s)</span>
                 </div>`).join('');
+            const examHtml = (c.exams || []).map(e =>
+                `<div class="exam-row">
+                    <div class="exam-header"><strong>${esc(e.title)}</strong> <span class="muted small">${e.scheduleDateTime ? new Date(e.scheduleDateTime).toLocaleDateString() : 'TBA'}</span></div>
+                    <p class="muted">${esc(e.description)}</p>
+                    <a class="link-button" href="${e.fileUrl}" target="_blank">${e.fileType === 'PDF' ? 'Download PDF' : 'View Image'}</a>
+                </div>`).join('');
             return `<div class="dash-course-card">
                 <div class="course-card-header">
                     <div>
@@ -210,6 +249,7 @@ async function loadCourses() {
                 </div>
                 ${modulesHtml ? `<div class="section-label">Modules</div><div class="module-list-dash">${modulesHtml}</div>` : ''}
                 ${assignHtml ? `<div class="section-label">Assignments</div><div class="assign-list">${assignHtml}</div>` : ''}
+                ${examHtml ? `<div class="section-label">Exam Schedule</div><div class="assign-list">${examHtml}</div>` : ''}
             </div>`;
         }).join('');
     } catch (e) {
@@ -222,11 +262,13 @@ function courseOptions() {
 }
 
 function populateFormCourses() {
-    ['mod-course','mat-course','asgn-course'].forEach(id => {
+    ['mod-course','mat-course','asgn-course','exam-course'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = myCourses.length ? courseOptions() : '<option value="">No courses assigned</option>';
     });
-    if (myCourses.length) populateModules();
+    if (myCourses.length) {
+        populateModules();
+    }
 }
 
 function populateModules() {
@@ -306,6 +348,32 @@ async function addAssignment() {
         toast('Assignment created!');
         document.getElementById('asgn-desc').value = '';
         document.getElementById('asgn-deadline').value = '';
+        await refreshCourses();
+    } catch (e) { toast(e.message, false); }
+}
+
+async function addExam() {
+    const courseId = document.getElementById('exam-course').value;
+    const title = document.getElementById('exam-title').value.trim();
+    const description = document.getElementById('exam-desc').value.trim();
+    const scheduleRaw = document.getElementById('exam-schedule').value;
+    const fileType = document.getElementById('exam-type').value;
+    const fileUrl = document.getElementById('exam-url').value.trim();
+    if (!title || !description || !scheduleRaw || !fileUrl) {
+        toast('Fill in all exam schedule fields.', false);
+        return;
+    }
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/exams?instructorId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description, scheduleDateTime: new Date(scheduleRaw).toISOString(), fileType, fileUrl })
+        });
+        toast('Exam schedule uploaded!');
+        document.getElementById('exam-title').value = '';
+        document.getElementById('exam-desc').value = '';
+        document.getElementById('exam-schedule').value = '';
+        document.getElementById('exam-url').value = '';
         await refreshCourses();
     } catch (e) { toast(e.message, false); }
 }

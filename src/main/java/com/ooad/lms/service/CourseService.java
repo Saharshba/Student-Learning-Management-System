@@ -1,22 +1,25 @@
 package com.ooad.lms.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.ooad.lms.dto.CreateAssignmentRequest;
 import com.ooad.lms.dto.CreateCourseRequest;
+import com.ooad.lms.dto.CreateExamRequest;
 import com.ooad.lms.dto.CreateModuleRequest;
 import com.ooad.lms.dto.UploadMaterialRequest;
 import com.ooad.lms.exception.BadRequestException;
 import com.ooad.lms.exception.NotFoundException;
 import com.ooad.lms.model.Assignment;
 import com.ooad.lms.model.Course;
+import com.ooad.lms.model.Exam;
 import com.ooad.lms.model.Instructor;
 import com.ooad.lms.model.Material;
 import com.ooad.lms.model.Module;
 import com.ooad.lms.model.Role;
 import com.ooad.lms.repository.InMemoryDataStore;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class CourseService {
@@ -105,6 +108,21 @@ public class CourseService {
         getCourse(courseId).addAssignment(assignment);
         dataStore.assignments().put(assignment.getAssignmentId(), assignment);
         return assignment;
+    }
+
+    public Exam addExam(Long instructorId, Long courseId, CreateExamRequest request) {
+        validateInstructorForCourse(instructorId, courseId);
+        Exam exam = new Exam(
+                dataStore.nextExamId(),
+                request.title(),
+                request.description(),
+                java.time.LocalDateTime.parse(request.scheduleDateTime()),
+                request.fileType(),
+                request.fileUrl(),
+                java.time.LocalDateTime.now()
+        );
+        getCourse(courseId).addExam(exam);
+        return exam;
     }
 
     public Assignment getAssignment(Long assignmentId) {

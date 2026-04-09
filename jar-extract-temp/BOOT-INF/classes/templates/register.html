@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account – Student LMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/dark-mode.css">
+    <script defer src="/js/theme-toggle.js"></script>
+</head>
+<body class="auth-page">
+<script>try{ if(localStorage.getItem('lmsTheme')==='dark') document.body.classList.add('dark-mode'); }catch(e){}</script>
+<div class="auth-shell">
+    <a class="auth-back" href="/login.html">&#8592; Back to sign in</a>
+    <div class="auth-card">
+        <div class="auth-logo">&#127979;</div>
+        <h1 class="auth-title">Create an account</h1>
+        <p class="auth-sub">Choose your role and fill in your details to get started.</p>
+
+        <!-- Role selector -->
+        <div class="role-selector">
+            <button class="role-btn active" data-role="STUDENT" onclick="selectRole('STUDENT', this)">
+                <span class="role-icon">&#127891;</span>
+                <span class="role-label">Student</span>
+            </button>
+            <button class="role-btn" data-role="INSTRUCTOR" onclick="selectRole('INSTRUCTOR', this)">
+                <span class="role-icon">&#128196;</span>
+                <span class="role-label">Instructor</span>
+            </button>
+            <button class="role-btn" data-role="ADMINISTRATOR" onclick="selectRole('ADMINISTRATOR', this)">
+                <span class="role-icon">&#128737;</span>
+                <span class="role-label">Admin</span>
+            </button>
+        </div>
+
+        <div id="reg-error" class="auth-alert hidden"></div>
+        <div id="reg-success" class="auth-success hidden"></div>
+
+        <form id="reg-form" autocomplete="off">
+            <div class="form-field">
+                <label for="reg-name">Full Name</label>
+                <input type="text" id="reg-name" placeholder="Jane Smith" required>
+            </div>
+            <div class="form-field">
+                <label for="reg-email">Email Address</label>
+                <input type="email" id="reg-email" placeholder="jane@example.com" required>
+            </div>
+            <div class="form-field">
+                <label for="reg-password">Password</label>
+                <input type="password" id="reg-password" placeholder="At least 6 characters" required minlength="6">
+            </div>
+            <div class="form-field">
+                <label for="reg-confirm">Confirm Password</label>
+                <input type="password" id="reg-confirm" placeholder="Repeat password" required>
+            </div>
+            <button type="submit" class="btn-submit" id="reg-btn">Create account</button>
+        </form>
+        <p class="auth-footer">Already have an account? <a href="/login.html" class="auth-link">Sign in</a></p>
+    </div>
+</div>
+
+<script>
+    let selectedRole = 'STUDENT';
+
+    function selectRole(role, btn) {
+        selectedRole = role;
+        document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('reg-error').classList.add('hidden');
+        document.getElementById('reg-success').classList.add('hidden');
+    }
+
+    document.getElementById('reg-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('reg-btn');
+        const errDiv = document.getElementById('reg-error');
+        const okDiv = document.getElementById('reg-success');
+
+        errDiv.classList.add('hidden');
+        okDiv.classList.add('hidden');
+
+        const name = document.getElementById('reg-name').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const password = document.getElementById('reg-password').value;
+        const confirm = document.getElementById('reg-confirm').value;
+
+        if (password !== confirm) {
+            errDiv.textContent = 'Passwords do not match.';
+            errDiv.classList.remove('hidden');
+            return;
+        }
+        if (password.length < 6) {
+            errDiv.textContent = 'Password must be at least 6 characters.';
+            errDiv.classList.remove('hidden');
+            return;
+        }
+
+        btn.textContent = 'Creating account…';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, role: selectedRole })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Registration failed. Please try again.');
+
+            okDiv.textContent = `Account created for ${data.name} (${data.role})! Redirecting to sign in…`;
+            okDiv.classList.remove('hidden');
+            document.getElementById('reg-form').reset();
+            setTimeout(() => location.href = '/login.html', 2000);
+        } catch (err) {
+            errDiv.textContent = err.message;
+            errDiv.classList.remove('hidden');
+            btn.textContent = 'Create account';
+            btn.disabled = false;
+        }
+    });
+</script>
+<button class="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+</body>
+</html>

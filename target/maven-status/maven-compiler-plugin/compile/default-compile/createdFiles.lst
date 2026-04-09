@@ -20,6 +20,7 @@ com\ooad\lms\dto\CreateAssignmentRequest.class
 com\ooad\lms\dto\CreateCourseRequest.class
 com\ooad\lms\model\MaterialType.class
 com\ooad\lms\model\ProgressTracker.class
+com\ooad\lms\dto\CreateExamRequest.class
 com\ooad\lms\model\Role.class
 com\ooad\lms\dto\LoginRequest.class
 com\ooad\lms\model\Assignment.class
@@ -32,6 +33,7 @@ com\ooad\lms\service\UserService$1.class
 com\ooad\lms\exception\GlobalExceptionHandler.class
 com\ooad\lms\model\User.class
 com\ooad\lms\service\StudentService.class
+com\ooad\lms\model\Exam.class
 com\ooad\lms\service\AdminService.class
 com\ooad\lms\model\Administrator.class
 com\ooad\lms\model\Material.class

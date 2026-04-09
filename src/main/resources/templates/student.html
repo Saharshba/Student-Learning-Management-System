@@ -140,8 +140,15 @@ async function loadCourses() {
                     </div>
                     ${enrolled ? `<div class="submit-inline">
                         <input type="text" id="sub-${a.assignmentId}" placeholder="Your submission content" class="inline-input">
-                        <button class="btn-sm btn-primary" onclick="submitAssignment(${a.assignmentId}, '${a.assignmentId}')">Submit</button>
+                        <button class="btn-sm btn-primary" onclick="submitAssignment(${a.assignmentId})">Submit</button>
                     </div>` : ''}
+                </div>`
+            ).join('');
+            const examHtml = (c.exams || []).map(e =>
+                `<div class="exam-row">
+                    <div class="exam-header"><strong>${esc(e.title)}</strong> <span class="muted small">${e.scheduleDateTime ? new Date(e.scheduleDateTime).toLocaleDateString() : 'TBA'}</span></div>
+                    <p class="muted">${esc(e.description)}</p>
+                    <a class="link-button" href="${e.fileUrl}" target="_blank">${e.fileType === 'PDF' ? 'Download PDF' : 'View Image'}</a>
                 </div>`
             ).join('');
             return `<div class="dash-course-card">
@@ -165,6 +172,7 @@ async function loadCourses() {
                 </div>
                 ${modulesHtml ? `<div class="section-label">Modules</div><div class="module-list-dash">${modulesHtml}</div>` : ''}
                 ${assignHtml ? `<div class="section-label">Assignments ${enrolled ? '& Submit' : ''}</div><div class="assign-list">${assignHtml}</div>` : ''}
+                ${examHtml ? `<div class="section-label">Exam Schedule</div><div class="assign-list">${examHtml}</div>` : ''}
             </div>`;
         }).join('');
     } catch (e) {

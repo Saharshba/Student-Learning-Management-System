@@ -5,6 +5,7 @@ C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\ma
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\controller\WebController.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\dto\CreateAssignmentRequest.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\dto\CreateCourseRequest.java
+C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\dto\CreateExamRequest.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\dto\CreateModuleRequest.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\dto\GradeSubmissionRequest.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\dto\LoginRequest.java
@@ -17,6 +18,7 @@ C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\ma
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\model\Administrator.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\model\Assignment.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\model\Course.java
+C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\model\Exam.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\model\Instructor.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\model\Material.java
 C:\Users\DHANUSH\OneDrive\Desktop\Student-Learning-Management-System-main\src\main\java\com\ooad\lms\model\MaterialType.java

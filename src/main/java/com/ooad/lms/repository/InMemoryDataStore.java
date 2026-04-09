@@ -1,14 +1,15 @@
 package com.ooad.lms.repository;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.springframework.stereotype.Component;
+
 import com.ooad.lms.model.Assignment;
 import com.ooad.lms.model.Course;
 import com.ooad.lms.model.Submission;
 import com.ooad.lms.model.User;
-import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Component
 public class InMemoryDataStore {
@@ -17,6 +18,7 @@ public class InMemoryDataStore {
     private final AtomicLong moduleIds = new AtomicLong(1);
     private final AtomicLong materialIds = new AtomicLong(1);
     private final AtomicLong assignmentIds = new AtomicLong(1);
+    private final AtomicLong examIds = new AtomicLong(1);
     private final AtomicLong submissionIds = new AtomicLong(1);
 
     private final Map<Long, User> users = new ConcurrentHashMap<>();
@@ -42,6 +44,10 @@ public class InMemoryDataStore {
 
     public long nextAssignmentId() {
         return assignmentIds.getAndIncrement();
+    }
+
+    public long nextExamId() {
+        return examIds.getAndIncrement();
     }
 
     public long nextSubmissionId() {

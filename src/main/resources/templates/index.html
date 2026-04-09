@@ -113,6 +113,17 @@
                             <span th:text="${#lists.size(module.materials)} + ' materials'">0 materials</span>
                         </div>
                     </div>
+                    <div class="exam-list" th:if="${!#lists.isEmpty(course.exams)}">
+                        <h4>Exam Schedule</h4>
+                        <div class="exam-item" th:each="exam : ${course.exams}">
+                            <div class="exam-header">
+                                <strong th:text="${exam.title}">Midterm Exam</strong>
+                                <span class="muted small" th:text="${exam.scheduleDateTime != null ? #temporals.format(exam.scheduleDateTime, 'MMM d, yyyy HH:mm') : 'TBA'}">May 10, 2026 10:00</span>
+                            </div>
+                            <p th:text="${exam.description}">Exam info and timetable details.</p>
+                            <a class="link-button" th:href="${exam.fileUrl}" target="_blank" th:text="${exam.fileType.name() == 'PDF' ? 'Download PDF' : 'View Image'}">Download</a>
+                        </div>
+                    </div>
                 </article>
             </div>
         </section>
@@ -140,6 +151,10 @@
                     </tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="exam-demo-note">
+                <h3>Demo Exam Schedule</h3>
+                <p>Log in as the demo instructor, upload the exam timetable as a PDF or image, then use the demo student account to view or download it.</p>
             </div>
         </section>
 

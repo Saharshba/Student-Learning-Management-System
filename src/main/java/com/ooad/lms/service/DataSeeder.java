@@ -1,14 +1,17 @@
 package com.ooad.lms.service;
 
+import org.springframework.stereotype.Component;
+
 import com.ooad.lms.dto.CreateCourseRequest;
+import com.ooad.lms.dto.CreateExamRequest;
 import com.ooad.lms.dto.CreateModuleRequest;
 import com.ooad.lms.dto.RegisterRequest;
 import com.ooad.lms.dto.UploadMaterialRequest;
 import com.ooad.lms.model.Course;
 import com.ooad.lms.model.MaterialType;
 import com.ooad.lms.model.Role;
+
 import jakarta.annotation.PostConstruct;
-import org.springframework.stereotype.Component;
 
 @Component
 public class DataSeeder {
@@ -34,6 +37,17 @@ public class DataSeeder {
                 course.getCourseId(),
                 module.getModuleId(),
                 new UploadMaterialRequest("LMS Overview", MaterialType.PDF, "https://example.com/lms-overview.pdf")
+        );
+        courseService.addExam(
+                instructor.getUserId(),
+                course.getCourseId(),
+                new CreateExamRequest(
+                        "Midterm Exam",
+                        "Midterm timetable for OOAD Fundamentals. Download the PDF or review the image schedule.",
+                        "2026-05-10T10:00",
+                        MaterialType.PDF,
+                        "https://example.com/ooad-midterm.pdf"
+                )
         );
     }
 }
