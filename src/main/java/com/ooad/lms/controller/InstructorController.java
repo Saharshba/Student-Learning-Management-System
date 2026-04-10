@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 import com.ooad.lms.dto.CreateAssignmentRequest;
 import com.ooad.lms.dto.CreateExamRequest;
@@ -49,6 +51,17 @@ public class InstructorController {
             @Valid @RequestBody UploadMaterialRequest request
     ) {
         return courseService.addMaterial(instructorId, courseId, moduleId, request);
+    }
+
+    @PostMapping(value = "/courses/{courseId}/modules/{moduleId}/materials/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Material uploadPdfMaterial(
+            @PathVariable Long courseId,
+            @PathVariable Long moduleId,
+            @RequestParam Long instructorId,
+            @RequestParam String name,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return courseService.uploadPdfMaterial(instructorId, courseId, moduleId, name, file);
     }
 
     @PostMapping("/courses/{courseId}/assignments")

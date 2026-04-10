@@ -2,14 +2,33 @@ package com.ooad.lms.model;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "submissions")
 public class Submission {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long submissionId;
+
     private Long studentId;
+
     private Long assignmentId;
+
     private LocalDateTime timestamp;
+
     private Double grade;
+
     private String content;
+
     private String feedback;
+
+    protected Submission() {
+    }
 
     public Submission(Long submissionId, Long studentId, Long assignmentId, LocalDateTime timestamp, String content) {
         this.submissionId = submissionId;

@@ -6,6 +6,11 @@ import com.ooad.lms.model.Submission;
 import com.ooad.lms.service.CourseService;
 import com.ooad.lms.service.StudentService;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -59,5 +64,21 @@ public class StudentController {
     @GetMapping("/{studentId}/notifications")
     public List<String> getNotifications(@PathVariable Long studentId) {
         return studentService.getDeadlineNotifications(studentId);
+    }
+
+    @GetMapping("/{studentId}/materials/{materialId}/download")
+    public ResponseEntity<Resource> downloadMaterial(
+            @PathVariable Long studentId,
+            @PathVariable Long materialId
+    ) {
+        StudentService.MaterialDownload download = studentService.downloadMaterial(studentId, materialId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment().filename(download.fileName()).build());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(download.resource());
     }
 }

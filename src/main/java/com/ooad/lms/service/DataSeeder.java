@@ -25,6 +25,10 @@ public class DataSeeder {
 
     @PostConstruct
     public void seed() {
+        if (userService.countUsers() > 0) {
+            return;
+        }
+
         userService.register(new RegisterRequest("System Admin", "admin@lms.com", "admin123", Role.ADMINISTRATOR));
         var instructor = userService.register(new RegisterRequest("Course Instructor", "instructor@lms.com", "teach123", Role.INSTRUCTOR));
         userService.register(new RegisterRequest("Student User", "student@lms.com", "learn123", Role.STUDENT));

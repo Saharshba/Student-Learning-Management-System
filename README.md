@@ -17,7 +17,7 @@ This project is a Spring Boot implementation of the OOAD Student Learning Manage
 - Java 17
 - Spring Boot 3
 - Maven
-- In-memory data store for quick demo setup
+- H2 database (backend persistence)
 
 ## Run the Project
 
@@ -50,11 +50,13 @@ Open `http://localhost:8080/` for the HTML homepage.
 - `GET /api/students/{studentId}/grades`
 - `GET /api/students/{studentId}/progress`
 - `GET /api/students/{studentId}/notifications`
+- `GET /api/students/{studentId}/materials/{materialId}/download`
 
 ### Instructor
 
 - `POST /api/instructor/courses/{courseId}/modules?instructorId={id}`
 - `POST /api/instructor/courses/{courseId}/modules/{moduleId}/materials?instructorId={id}`
+- `POST /api/instructor/courses/{courseId}/modules/{moduleId}/materials/pdf?instructorId={id}` (multipart form-data: `name`, `file`)
 - `POST /api/instructor/courses/{courseId}/assignments?instructorId={id}`
 - `GET /api/instructor/courses/{courseId}/assignments/{assignmentId}/submissions?instructorId={id}`
 - `POST /api/instructor/courses/{courseId}/submissions/{submissionId}/grade?instructorId={id}`
@@ -70,5 +72,6 @@ Open `http://localhost:8080/` for the HTML homepage.
 
 ## Notes
 
-- The current implementation uses in-memory storage for simplicity.
-- The structure is ready to be migrated to JPA and MySQL/PostgreSQL later.
+- Core backend data is persisted in H2.
+- Uploaded PDFs are stored on disk, and their metadata is stored in H2.
+- The structure can be migrated to MySQL/PostgreSQL later if needed.

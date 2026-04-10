@@ -2,12 +2,32 @@ package com.ooad.lms.model;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "materials")
 public class Material {
-    private final Long fileId;
-    private final MaterialType fileType;
-    private final LocalDateTime uploadDate;
-    private final String name;
-    private final String contentUrl;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long fileId;
+
+    @Enumerated(EnumType.STRING)
+    private MaterialType fileType;
+
+    private LocalDateTime uploadDate;
+
+    private String name;
+
+    private String contentUrl;
+
+    protected Material() {
+    }
 
     public Material(Long fileId, MaterialType fileType, LocalDateTime uploadDate, String name, String contentUrl) {
         this.fileId = fileId;
@@ -39,5 +59,9 @@ public class Material {
 
     public String getContentUrl() {
         return contentUrl;
+    }
+
+    public void setContentUrl(String contentUrl) {
+        this.contentUrl = contentUrl;
     }
 }

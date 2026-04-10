@@ -15,71 +15,78 @@ import com.ooad.lms.exception.NotFoundException;
 import com.ooad.lms.model.Assignment;
 import com.ooad.lms.model.Course;
 import com.ooad.lms.model.Exam;
-import com.ooad.lms.model.Instructor;
 import com.ooad.lms.model.Material;
+import com.ooad.lms.model.MaterialFileMetadata;
+import com.ooad.lms.model.MaterialType;
 import com.ooad.lms.model.Module;
 import com.ooad.lms.model.Role;
-import com.ooad.lms.repository.InMemoryDataStore;
+import com.ooad.lms.repository.AssignmentRepository;
+import com.ooad.lms.repository.CourseRepository;
+import com.ooad.lms.repository.MaterialFileMetadataRepository;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class CourseService {
-    private final InMemoryDataStore dataStore;
+    private final CourseRepository courseRepository;
+    private final AssignmentRepository assignmentRepository;
     private final UserService userService;
+    private final FileStorageService fileStorageService;
+    private final MaterialFileMetadataRepository materialFileMetadataRepository;
 
-    public CourseService(InMemoryDataStore dataStore, UserService userService) {
-        this.dataStore = dataStore;
+    public CourseService(
+            CourseRepository courseRepository,
+            AssignmentRepository assignmentRepository,
+            UserService userService,
+            FileStorageService fileStorageService,
+            MaterialFileMetadataRepository materialFileMetadataRepository
+    ) {
+        this.courseRepository = courseRepository;
+        this.assignmentRepository = assignmentRepository;
         this.userService = userService;
+        this.fileStorageService = fileStorageService;
+        this.materialFileMetadataRepository = materialFileMetadataRepository;
     }
 
     public Course createCourse(CreateCourseRequest request) {
-        long courseId = dataStore.nextCourseId();
-        Course course = new Course(courseId, request.title(), request.description());
-        dataStore.courses().put(courseId, course);
-        return course;
+        return courseRepository.save(new Course(null, request.title(), request.description()));
     }
 
     public List<Course> getAllCourses() {
-        return dataStore.courses().values().stream().toList();
+        return courseRepository.findAll();
     }
 
     public Course getCourse(Long courseId) {
-        Course course = dataStore.courses().get(courseId);
-        if (course == null) {
-            throw new NotFoundException("Course not found");
-        }
-        return course;
+        return courseRepository.findById(courseId)
+                .orElseThrow(() -> new NotFoundException("Course not found"));
     }
 
     public Course updateCourse(Long courseId, CreateCourseRequest request) {
         Course course = getCourse(courseId);
-        Course updatedCourse = new Course(course.getCourseId(), request.title(), request.description());
-        updatedCourse.setInstructorId(course.getInstructorId());
-        updatedCourse.getModules().addAll(course.getModules());
-        updatedCourse.getAssignments().addAll(course.getAssignments());
-        updatedCourse.getEnrolledStudentIds().addAll(course.getEnrolledStudentIds());
-        dataStore.courses().put(courseId, updatedCourse);
-        return updatedCourse;
+        course.setTitle(request.title());
+        course.setDescription(request.description());
+        return courseRepository.save(course);
     }
 
     public void deleteCourse(Long courseId) {
-        if (dataStore.courses().remove(courseId) == null) {
+        if (!courseRepository.existsById(courseId)) {
             throw new NotFoundException("Course not found");
         }
+        courseRepository.deleteById(courseId);
     }
 
     public Course assignInstructor(Long courseId, Long instructorId) {
         userService.validateRole(instructorId, Role.INSTRUCTOR);
         Course course = getCourse(courseId);
         course.setInstructorId(instructorId);
-        Instructor instructor = (Instructor) userService.getUser(instructorId);
-        instructor.assignCourse(courseId);
-        return course;
+        return courseRepository.save(course);
     }
 
     public Module addModule(Long instructorId, Long courseId, CreateModuleRequest request) {
         validateInstructorForCourse(instructorId, courseId);
-        Module module = new Module(dataStore.nextModuleId(), request.title());
-        getCourse(courseId).addModule(module);
+        Module module = new Module(null, request.title());
+        Course course = getCourse(courseId);
+        course.addModule(module);
+        courseRepository.save(course);
         return module;
     }
 
@@ -91,29 +98,71 @@ public class CourseService {
                 .orElseThrow(() -> new NotFoundException("Module not found"));
 
         Material material = new Material(
-                dataStore.nextMaterialId(),
+            null,
                 request.fileType(),
                 LocalDateTime.now(),
                 request.name(),
                 request.contentUrl()
         );
         module.addMaterial(material);
+        courseRepository.save(getCourse(courseId));
         return material;
+    }
+
+    public Material uploadPdfMaterial(Long instructorId, Long courseId, Long moduleId, String name, MultipartFile file) {
+        if (name == null || name.isBlank()) {
+            throw new BadRequestException("Material name is required");
+        }
+
+        validateInstructorForCourse(instructorId, courseId);
+        Module module = getCourse(courseId).getModules().stream()
+                .filter(existing -> existing.getModuleId().equals(moduleId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Module not found"));
+
+        FileStorageService.StoredFile storedFile = fileStorageService.storePdf(file);
+        Material material = new Material(
+            null,
+                MaterialType.PDF,
+                LocalDateTime.now(),
+                name,
+            "pending"
+        );
+        module.addMaterial(material);
+        Course saved = courseRepository.save(getCourse(courseId));
+
+        Material persistedMaterial = saved.getModules().stream()
+            .filter(m -> m.getModuleId().equals(moduleId))
+            .flatMap(m -> m.getMaterials().stream())
+            .filter(m -> "pending".equals(m.getContentUrl()))
+            .reduce((first, second) -> second)
+            .orElseThrow(() -> new NotFoundException("Saved material not found"));
+
+        persistedMaterial.setContentUrl("/api/students/{studentId}/materials/" + persistedMaterial.getFileId() + "/download");
+        courseRepository.save(saved);
+
+        materialFileMetadataRepository.save(new MaterialFileMetadata(
+            persistedMaterial.getFileId(),
+            storedFile.storagePath(),
+            storedFile.originalFileName()
+        ));
+        return persistedMaterial;
     }
 
     public Assignment createAssignment(Long instructorId, Long courseId, CreateAssignmentRequest request) {
         validateInstructorForCourse(instructorId, courseId);
-        Assignment assignment = new Assignment(dataStore.nextAssignmentId(), request.description(), request.deadline());
+        Assignment assignment = new Assignment(null, request.description(), request.deadline());
         assignment.publish();
-        getCourse(courseId).addAssignment(assignment);
-        dataStore.assignments().put(assignment.getAssignmentId(), assignment);
+        Course course = getCourse(courseId);
+        course.addAssignment(assignment);
+        courseRepository.save(course);
         return assignment;
     }
 
     public Exam addExam(Long instructorId, Long courseId, CreateExamRequest request) {
         validateInstructorForCourse(instructorId, courseId);
         Exam exam = new Exam(
-                dataStore.nextExamId(),
+                null,
                 request.title(),
                 request.description(),
                 java.time.LocalDateTime.parse(request.scheduleDateTime()),
@@ -121,16 +170,15 @@ public class CourseService {
                 request.fileUrl(),
                 java.time.LocalDateTime.now()
         );
-        getCourse(courseId).addExam(exam);
+        Course course = getCourse(courseId);
+        course.addExam(exam);
+        courseRepository.save(course);
         return exam;
     }
 
     public Assignment getAssignment(Long assignmentId) {
-        Assignment assignment = dataStore.assignments().get(assignmentId);
-        if (assignment == null) {
-            throw new NotFoundException("Assignment not found");
-        }
-        return assignment;
+        return assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new NotFoundException("Assignment not found"));
     }
 
     private void validateInstructorForCourse(Long instructorId, Long courseId) {

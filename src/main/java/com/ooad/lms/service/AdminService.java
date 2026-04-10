@@ -4,7 +4,9 @@ import com.ooad.lms.model.Course;
 import com.ooad.lms.model.Role;
 import com.ooad.lms.model.Submission;
 import com.ooad.lms.model.User;
-import com.ooad.lms.repository.InMemoryDataStore;
+import com.ooad.lms.repository.CourseRepository;
+import com.ooad.lms.repository.SubmissionRepository;
+import com.ooad.lms.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -15,17 +17,27 @@ import java.util.Map;
 public class AdminService {
     private final UserService userService;
     private final CourseService courseService;
-    private final InMemoryDataStore dataStore;
+    private final UserRepository userRepository;
+    private final CourseRepository courseRepository;
+    private final SubmissionRepository submissionRepository;
 
-    public AdminService(UserService userService, CourseService courseService, InMemoryDataStore dataStore) {
+    public AdminService(
+            UserService userService,
+            CourseService courseService,
+            UserRepository userRepository,
+            CourseRepository courseRepository,
+            SubmissionRepository submissionRepository
+    ) {
         this.userService = userService;
         this.courseService = courseService;
-        this.dataStore = dataStore;
+        this.userRepository = userRepository;
+        this.courseRepository = courseRepository;
+        this.submissionRepository = submissionRepository;
     }
 
     public List<User> getAllUsers(Long adminId) {
         userService.validateRole(adminId, Role.ADMINISTRATOR);
-        return dataStore.users().values().stream().toList();
+        return userRepository.findAll();
     }
 
     public List<Course> getAllCourses(Long adminId) {
@@ -36,11 +48,13 @@ public class AdminService {
     public Map<String, Object> generateReport(Long adminId) {
         userService.validateRole(adminId, Role.ADMINISTRATOR);
 
-        long totalUsers = dataStore.users().size();
-        long totalCourses = dataStore.courses().size();
-        long totalStudents = dataStore.users().values().stream().filter(user -> user.getRole() == Role.STUDENT).count();
-        long totalInstructors = dataStore.users().values().stream().filter(user -> user.getRole() == Role.INSTRUCTOR).count();
-        double averageGrade = dataStore.submissions().values().stream()
+        long totalUsers = userRepository.count();
+        long totalCourses = courseRepository.count();
+        List<User> users = userRepository.findAll();
+        List<Submission> submissions = submissionRepository.findAll();
+        long totalStudents = users.stream().filter(user -> user.getRole() == Role.STUDENT).count();
+        long totalInstructors = users.stream().filter(user -> user.getRole() == Role.INSTRUCTOR).count();
+        double averageGrade = submissions.stream()
                 .map(Submission::getGrade)
                 .filter(grade -> grade != null)
                 .mapToDouble(Double::doubleValue)
@@ -53,7 +67,7 @@ public class AdminService {
         report.put("totalInstructors", totalInstructors);
         report.put("totalCourses", totalCourses);
         report.put("averageGrade", averageGrade);
-        report.put("submissionsEvaluated", dataStore.submissions().values().stream().filter(s -> s.getGrade() != null).count());
+        report.put("submissionsEvaluated", submissions.stream().filter(s -> s.getGrade() != null).count());
         return report;
     }
 }

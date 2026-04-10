@@ -9,7 +9,13 @@ import com.ooad.lms.model.ProgressTracker;
 import com.ooad.lms.model.Role;
 import com.ooad.lms.model.Student;
 import com.ooad.lms.model.Submission;
-import com.ooad.lms.repository.InMemoryDataStore;
+import com.ooad.lms.model.MaterialFileMetadata;
+import org.springframework.core.io.Resource;
+import com.ooad.lms.repository.AssignmentRepository;
+import com.ooad.lms.repository.CourseRepository;
+import com.ooad.lms.repository.MaterialFileMetadataRepository;
+import com.ooad.lms.repository.SubmissionRepository;
+import com.ooad.lms.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,14 +25,33 @@ import java.util.stream.Collectors;
 
 @Service
 public class StudentService {
-    private final InMemoryDataStore dataStore;
+    private final CourseRepository courseRepository;
+    private final SubmissionRepository submissionRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
     private final CourseService courseService;
+    private final FileStorageService fileStorageService;
+    private final MaterialFileMetadataRepository materialFileMetadataRepository;
 
-    public StudentService(InMemoryDataStore dataStore, UserService userService, CourseService courseService) {
-        this.dataStore = dataStore;
+    public StudentService(
+            CourseRepository courseRepository,
+            SubmissionRepository submissionRepository,
+            AssignmentRepository assignmentRepository,
+            UserRepository userRepository,
+            UserService userService,
+            CourseService courseService,
+            FileStorageService fileStorageService,
+            MaterialFileMetadataRepository materialFileMetadataRepository
+    ) {
+        this.courseRepository = courseRepository;
+        this.submissionRepository = submissionRepository;
+        this.assignmentRepository = assignmentRepository;
+        this.userRepository = userRepository;
         this.userService = userService;
         this.courseService = courseService;
+        this.fileStorageService = fileStorageService;
+        this.materialFileMetadataRepository = materialFileMetadataRepository;
     }
 
     public Course enroll(Long studentId, Long courseId) {
@@ -35,6 +60,8 @@ public class StudentService {
         Course course = courseService.getCourse(courseId);
         student.enrollCourse(courseId);
         course.enrollStudent(studentId);
+        userRepository.save(student);
+        courseRepository.save(course);
         return course;
     }
 
@@ -43,7 +70,7 @@ public class StudentService {
         Student student = (Student) userService.getUser(studentId);
         Assignment assignment = courseService.getAssignment(assignmentId);
 
-        boolean enrolled = dataStore.courses().values().stream()
+        boolean enrolled = courseRepository.findAll().stream()
                 .filter(course -> course.getAssignments().stream().anyMatch(item -> item.getAssignmentId().equals(assignmentId)))
                 .anyMatch(course -> course.getEnrolledStudentIds().contains(studentId));
         if (!enrolled) {
@@ -54,16 +81,18 @@ public class StudentService {
         }
 
         Submission submission = new Submission(
-                dataStore.nextSubmissionId(),
+            null,
                 studentId,
                 assignmentId,
                 LocalDateTime.now(),
                 request.content()
         );
         submission.submit();
-        dataStore.submissions().put(submission.getSubmissionId(), submission);
+        submission = submissionRepository.save(submission);
         assignment.evaluate(submission.getSubmissionId());
+        assignmentRepository.save(assignment);
         student.submitAssignment(submission.getSubmissionId());
+        userRepository.save(student);
         return submission;
     }
 
@@ -71,7 +100,9 @@ public class StudentService {
         userService.validateRole(studentId, Role.STUDENT);
         Student student = (Student) userService.getUser(studentId);
         return student.getSubmissions().stream()
-                .map(submissionId -> dataStore.submissions().get(submissionId))
+            .map(submissionRepository::findById)
+            .filter(java.util.Optional::isPresent)
+            .map(java.util.Optional::get)
                 .toList();
     }
 
@@ -105,7 +136,9 @@ public class StudentService {
 
         long submittedAssignments = course.getAssignments().stream()
                 .flatMap(assignment -> assignment.getSubmissions().stream())
-                .map(submissionId -> dataStore.submissions().get(submissionId))
+            .map(submissionRepository::findById)
+            .filter(java.util.Optional::isPresent)
+            .map(java.util.Optional::get)
                 .filter(submission -> submission != null && submission.getStudentId().equals(studentId))
                 .count();
 
@@ -114,10 +147,36 @@ public class StudentService {
     }
 
     public Submission getSubmission(Long submissionId) {
-        Submission submission = dataStore.submissions().get(submissionId);
-        if (submission == null) {
-            throw new NotFoundException("Submission not found");
+        return submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new NotFoundException("Submission not found"));
+    }
+
+    public MaterialDownload downloadMaterial(Long studentId, Long materialId) {
+        userService.validateRole(studentId, Role.STUDENT);
+
+        Course course = courseRepository.findAll().stream()
+                .filter(item -> item.getEnrolledStudentIds().contains(studentId))
+                .filter(item -> item.getModules().stream()
+                        .anyMatch(module -> module.getMaterials().stream()
+                                .anyMatch(material -> material.getFileId().equals(materialId))))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Material not found for this student"));
+
+        course.getModules().stream()
+                .flatMap(module -> module.getMaterials().stream())
+                .filter(material -> material.getFileId().equals(materialId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Material not found"));
+
+        MaterialFileMetadata metadata = materialFileMetadataRepository.findById(materialId).orElse(null);
+        if (metadata == null) {
+            throw new BadRequestException("This material is a link and is not stored as a downloadable file");
         }
-        return submission;
+
+        Resource resource = fileStorageService.loadAsResource(metadata.getStoragePath());
+        return new MaterialDownload(resource, metadata.getOriginalFileName());
+    }
+
+    public record MaterialDownload(Resource resource, String fileName) {
     }
 }

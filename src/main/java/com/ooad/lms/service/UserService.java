@@ -9,48 +9,39 @@ import com.ooad.lms.model.Instructor;
 import com.ooad.lms.model.Role;
 import com.ooad.lms.model.Student;
 import com.ooad.lms.model.User;
-import com.ooad.lms.repository.InMemoryDataStore;
+import com.ooad.lms.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
-    private final InMemoryDataStore dataStore;
+    private final UserRepository userRepository;
 
-    public UserService(InMemoryDataStore dataStore) {
-        this.dataStore = dataStore;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     public User register(RegisterRequest request) {
-        boolean emailExists = dataStore.users().values().stream()
-                .anyMatch(user -> user.getEmail().equalsIgnoreCase(request.email()));
-        if (emailExists) {
+        if (userRepository.findByEmailIgnoreCase(request.email()).isPresent()) {
             throw new BadRequestException("Email already registered");
         }
 
-        long userId = dataStore.nextUserId();
         User user = switch (request.role()) {
-            case STUDENT -> new Student(userId, request.name(), request.email(), request.password());
-            case INSTRUCTOR -> new Instructor(userId, request.name(), request.email(), request.password());
-            case ADMINISTRATOR -> new Administrator(userId, request.name(), request.email(), request.password());
+            case STUDENT -> new Student(null, request.name(), request.email(), request.password());
+            case INSTRUCTOR -> new Instructor(null, request.name(), request.email(), request.password());
+            case ADMINISTRATOR -> new Administrator(null, request.name(), request.email(), request.password());
         };
 
-        dataStore.users().put(userId, user);
-        return user;
+        return userRepository.save(user);
     }
 
     public User login(LoginRequest request) {
-        return dataStore.users().values().stream()
-                .filter(user -> user.login(request.email(), request.password()))
-                .findFirst()
+        return userRepository.findByEmailIgnoreCaseAndPassword(request.email(), request.password())
                 .orElseThrow(() -> new NotFoundException("Invalid credentials"));
     }
 
     public User getUser(Long userId) {
-        User user = dataStore.users().get(userId);
-        if (user == null) {
-            throw new NotFoundException("User not found");
-        }
-        return user;
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
     public void validateRole(Long userId, Role role) {
@@ -58,5 +49,9 @@ public class UserService {
         if (user.getRole() != role) {
             throw new BadRequestException("User does not have required role: " + role);
         }
+    }
+
+    public long countUsers() {
+        return userRepository.count();
     }
 }
