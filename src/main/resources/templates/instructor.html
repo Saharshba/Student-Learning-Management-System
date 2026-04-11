@@ -74,21 +74,13 @@
                     </div>
                     <div class="form-field">
                         <label>Material Name</label>
-                        <input type="text" id="mat-name" placeholder="e.g., Lecture Slides Week 1">
+                        <input type="text" id="mat-name" placeholder="e.g., Week 1 Notes PDF">
                     </div>
                     <div class="form-field">
-                        <label>Type</label>
-                        <select id="mat-type">
-                            <option value="PDF">PDF</option>
-                            <option value="VIDEO">VIDEO</option>
-                            <option value="LINK">LINK</option>
-                        </select>
+                        <label>PDF File</label>
+                        <input type="file" id="mat-file" accept="application/pdf,.pdf">
                     </div>
-                    <div class="form-field">
-                        <label>Content URL</label>
-                        <input type="text" id="mat-url" placeholder="https://example.com/file">
-                    </div>
-                    <button class="btn-submit" onclick="addMaterial()">Upload Material</button>
+                    <button class="btn-submit" onclick="addMaterial()">Upload PDF</button>
                 </div>
 
                 <!-- Add Assignment -->
@@ -105,6 +97,10 @@
                     <div class="form-field">
                         <label>Deadline</label>
                         <input type="datetime-local" id="asgn-deadline">
+                    </div>
+                    <div class="form-field">
+                        <label>Assignment PDF (optional)</label>
+                        <input type="file" id="asgn-file" accept="application/pdf,.pdf">
                     </div>
                     <button class="btn-submit" onclick="addAssignment()">Create Assignment</button>
                 </div>
@@ -272,19 +268,30 @@ async function addMaterial() {
     const courseId = document.getElementById('mat-course').value;
     const moduleId = document.getElementById('mat-module').value;
     const name = document.getElementById('mat-name').value.trim();
-    const fileType = document.getElementById('mat-type').value;
-    const contentUrl = document.getElementById('mat-url').value.trim();
-    if (!name || !contentUrl) { toast('Fill in all material fields.', false); return; }
+    const fileInput = document.getElementById('mat-file');
+    const file = fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
+    if (!name || !file) { toast('Enter material name and choose a PDF file.', false); return; }
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('file', file);
+
     try {
-        await apiFetch(`/api/instructor/courses/${courseId}/modules/${moduleId}/materials?instructorId=${user.userId}`, {
+        const res = await fetch(`/api/instructor/courses/${courseId}/modules/${moduleId}/materials/pdf?instructorId=${user.userId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, fileType, contentUrl })
+            body: formData
         });
-        toast('Material uploaded!');
+
+        const data = await res.json().catch(() => ({ message: 'Upload failed' }));
+        if (!res.ok) {
+            throw new Error(data.message || 'Upload failed');
+        }
+
+        toast('PDF uploaded successfully!');
         document.getElementById('mat-name').value = '';
-        document.getElementById('mat-url').value = '';
+        fileInput.value = '';
         await refreshCourses();
+        await loadCourses();
     } catch (e) { toast(e.message, false); }
 }
 
@@ -292,17 +299,36 @@ async function addAssignment() {
     const courseId = document.getElementById('asgn-course').value;
     const description = document.getElementById('asgn-desc').value.trim();
     const deadlineRaw = document.getElementById('asgn-deadline').value;
+    const assignmentFileInput = document.getElementById('asgn-file');
+    const assignmentFile = assignmentFileInput.files && assignmentFileInput.files.length ? assignmentFileInput.files[0] : null;
     if (!description || !deadlineRaw) { toast('Fill in description and deadline.', false); return; }
     const deadline = new Date(deadlineRaw).toISOString();
     try {
-        await apiFetch(`/api/instructor/courses/${courseId}/assignments?instructorId=${user.userId}`, {
+        const assignment = await apiFetch(`/api/instructor/courses/${courseId}/assignments?instructorId=${user.userId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ description, deadline })
         });
+
+        if (assignmentFile) {
+            const formData = new FormData();
+            formData.append('file', assignmentFile);
+
+            const res = await fetch(`/api/instructor/courses/${courseId}/assignments/${assignment.assignmentId}/pdf?instructorId=${user.userId}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ message: 'Failed to upload assignment PDF' }));
+                throw new Error(err.message || 'Failed to upload assignment PDF');
+            }
+        }
+
         toast('Assignment created!');
         document.getElementById('asgn-desc').value = '';
         document.getElementById('asgn-deadline').value = '';
+        assignmentFileInput.value = '';
         await refreshCourses();
     } catch (e) { toast(e.message, false); }
 }
@@ -326,8 +352,16 @@ async function loadSubmissions() {
                 <div class="sub-meta">
                     <span class="pill">Sub #${s.submissionId}</span>
                     <span class="muted small">Student #${s.studentId} &nbsp;|&nbsp; ${s.timestamp ? new Date(s.timestamp).toLocaleString() : '—'}</span>
+                    ${s.hasPdf ? `<span class="pill" style="background:var(--accent2,#22c55e);color:#fff;margin-left:6px;">&#128196; PDF Attached</span>` : ''}
                 </div>
-                <p class="sub-content">${esc(s.content)}</p>
+                ${s.content ? `<p class="sub-content">${esc(s.content)}</p>` : ''}
+                ${s.hasPdf
+                    ? `<div style="margin:10px 0;">
+                        <a class="btn-submit" style="display:inline-block;text-decoration:none;padding:8px 18px;font-size:0.9rem;"
+                           href="/api/instructor/courses/${courseId}/submissions/${s.submissionId}/download?instructorId=${user.userId}"
+                           download>&#11015; Download Submitted PDF</a>
+                       </div>`
+                    : `<div class="muted small" style="margin:8px 0;">&#128462; No PDF attached — text-only submission.</div>`}
                 ${s.grade !== null && s.grade !== undefined
                     ? `<div class="already-graded">&#10003; Graded: <strong>${s.grade}/100</strong> — ${s.feedback ? esc(s.feedback) : 'No feedback'}</div>`
                     : `<div class="grade-form">
