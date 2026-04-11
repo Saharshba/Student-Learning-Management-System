@@ -8,8 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/dark-mode.css">
+    <script defer src="/js/theme-toggle.js"></script>
 </head>
 <body class="dash-page">
+<script>try{ if(localStorage.getItem('lmsTheme')==='dark') document.body.classList.add('dark-mode'); }catch(e){}</script>
 
 <div class="dash-layout">
     <!-- Sidebar -->
@@ -81,10 +84,11 @@
 <script>
 let user = null;
 let allCourses = [];
+let gradesCache = [];
 
 function logout() {
     sessionStorage.removeItem('lmsUser');
-    location.href = '/login';
+    location.href = '/login.html';
 }
 
 function showTab(name, btn) {
@@ -119,7 +123,20 @@ async function loadCourses() {
     const el = document.getElementById('courses-list');
     el.innerHTML = '<div class="loading">Loading…</div>';
     try {
-        allCourses = await apiFetch('/api/students/courses');
+        const [courses, grades] = await Promise.all([
+            apiFetch('/api/students/courses'),
+            apiFetch(`/api/students/${user.userId}/grades`).catch(() => [])
+        ]);
+        allCourses = courses;
+        gradesCache = grades;
+
+        const latestByAssignment = {};
+        grades.forEach(g => {
+            if (!latestByAssignment[g.assignmentId]) {
+                latestByAssignment[g.assignmentId] = g;
+            }
+        });
+
         if (!allCourses.length) { el.innerHTML = '<div class="empty-state">No courses available yet.</div>'; return; }
         el.innerHTML = allCourses.map(c => {
             const enrolled = c.enrolledStudentIds && c.enrolledStudentIds.includes(user.userId);
@@ -129,16 +146,33 @@ async function loadCourses() {
                     <span class="muted">${(m.materials||[]).length} material(s)</span>
                 </div>`
             ).join('');
-            const assignHtml = (c.assignments || []).map(a =>
-                `<div class="assign-row">
+            const assignHtml = (c.assignments || []).map(a => {
+                const submitted = latestByAssignment[a.assignmentId];
+                const dueText = submitted
+                    ? `Submitted: ${submitted.timestamp ? new Date(submitted.timestamp).toLocaleString() : 'Recorded'}`
+                    : `Due: ${a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'}`;
+
+                return `<div class="assign-row">
                     <div>
                         <span class="assign-desc">${esc(a.description)}</span>
-                        <span class="muted small">Due: ${a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'}</span>
+                        <span class="muted small">${dueText}</span>
                     </div>
-                    ${enrolled ? `<div class="submit-inline">
-                        <input type="text" id="sub-${a.assignmentId}" placeholder="Your submission content" class="inline-input">
-                        <button class="btn-sm btn-primary" onclick="submitAssignment(${a.assignmentId}, '${a.assignmentId}')">Submit</button>
-                    </div>` : ''}
+                    ${enrolled
+                        ? submitted
+                            ? `<div class="submit-inline"><span class="badge badge-green">&#10003; Submitted</span></div>`
+                            : `<div class="submit-inline" style="flex-direction:column;align-items:flex-start;gap:8px;">
+                                <input type="text" id="sub-${a.assignmentId}" placeholder="Optional notes" class="inline-input">
+                                <input type="file" id="subfile-${a.assignmentId}" accept="application/pdf,.pdf">
+                                <button class="btn-sm btn-primary" onclick="submitAssignment(${a.assignmentId})">Submit Assignment</button>
+                               </div>`
+                        : ''}
+                </div>`;
+            }).join('');
+            const examHtml = (c.exams || []).map(e =>
+                `<div class="exam-row">
+                    <div class="exam-header"><strong>${esc(e.title)}</strong> <span class="muted small">${e.scheduleDateTime ? new Date(e.scheduleDateTime).toLocaleDateString() : 'TBA'}</span></div>
+                    <p class="muted">${esc(e.description)}</p>
+                    <a class="link-button" href="${e.fileUrl}" target="_blank">${e.fileType === 'PDF' ? 'Download PDF' : 'View Image'}</a>
                 </div>`
             ).join('');
             return `<div class="dash-course-card">
@@ -162,6 +196,7 @@ async function loadCourses() {
                 </div>
                 ${modulesHtml ? `<div class="section-label">Modules</div><div class="module-list-dash">${modulesHtml}</div>` : ''}
                 ${assignHtml ? `<div class="section-label">Assignments ${enrolled ? '& Submit' : ''}</div><div class="assign-list">${assignHtml}</div>` : ''}
+                ${examHtml ? `<div class="section-label">Exam Schedule</div><div class="assign-list">${examHtml}</div>` : ''}
             </div>`;
         }).join('');
     } catch (e) {
@@ -180,15 +215,42 @@ async function enroll(courseId) {
 async function submitAssignment(assignmentId) {
     const input = document.getElementById('sub-' + assignmentId);
     const content = input ? input.value.trim() : '';
-    if (!content) { toast('Please enter your submission content.', false); return; }
+    const fileInput = document.getElementById('subfile-' + assignmentId);
+    const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
+
+    if (!content && !file) {
+        toast('Add notes or upload a PDF file before submitting.', false);
+        return;
+    }
+
     try {
-        await apiFetch(`/api/students/${user.userId}/assignments/${assignmentId}/submit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content })
-        });
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('content', content || 'PDF submission');
+
+            const res = await fetch(`/api/students/${user.userId}/assignments/${assignmentId}/submit/pdf`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json().catch(() => ({ message: 'Submission failed' }));
+            if (!res.ok) {
+                throw new Error(data.message || 'Submission failed');
+            }
+        } else {
+            await apiFetch(`/api/students/${user.userId}/assignments/${assignmentId}/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+        }
+
         toast('Assignment submitted!');
         if (input) input.value = '';
+        if (fileInput) fileInput.value = '';
+        await loadCourses();
+        await loadGrades();
     } catch (e) { toast(e.message, false); }
 }
 
@@ -197,6 +259,7 @@ async function loadGrades() {
     el.innerHTML = '<div class="loading">Loading…</div>';
     try {
         const grades = await apiFetch(`/api/students/${user.userId}/grades`);
+        gradesCache = grades;
         if (!grades.length) { el.innerHTML = '<div class="empty-state">No graded submissions yet.</div>'; return; }
         el.innerHTML = `<table class="data-table">
             <thead><tr><th>Submission ID</th><th>Assignment ID</th><th>Submitted</th><th>Grade</th><th>Feedback</th></tr></thead>
@@ -255,7 +318,7 @@ function esc(s) {
 // Bootstrap
 (function init() {
     const raw = sessionStorage.getItem('lmsUser');
-    if (!raw) { location.href = '/login'; return; }
+    if (!raw) { location.href = '/login.html'; return; }
     user = JSON.parse(raw);
     if (user.role !== 'STUDENT') {
         location.href = user.role === 'ADMINISTRATOR' ? '/dashboard/admin' : '/dashboard/instructor';
@@ -265,5 +328,6 @@ function esc(s) {
     loadCourses();
 })();
 </script>
+<button class="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
 </body>
 </html>

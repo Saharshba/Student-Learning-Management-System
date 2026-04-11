@@ -1,16 +1,7 @@
 package com.ooad.lms.controller;
 
-import com.ooad.lms.dto.CreateAssignmentRequest;
-import com.ooad.lms.dto.CreateModuleRequest;
-import com.ooad.lms.dto.GradeSubmissionRequest;
-import com.ooad.lms.dto.UploadMaterialRequest;
-import com.ooad.lms.model.Assignment;
-import com.ooad.lms.model.Material;
-import com.ooad.lms.model.Module;
-import com.ooad.lms.model.Submission;
-import com.ooad.lms.service.CourseService;
-import com.ooad.lms.service.InstructorService;
-import jakarta.validation.Valid;
+import java.util.List;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,8 +9,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
-import java.util.List;
+import com.ooad.lms.dto.CreateAssignmentRequest;
+import com.ooad.lms.dto.CreateExamRequest;
+import com.ooad.lms.dto.CreateModuleRequest;
+import com.ooad.lms.dto.GradeSubmissionRequest;
+import com.ooad.lms.dto.SubmissionViewResponse;
+import com.ooad.lms.dto.UploadMaterialRequest;
+import com.ooad.lms.model.Assignment;
+import com.ooad.lms.model.Exam;
+import com.ooad.lms.model.Material;
+import com.ooad.lms.model.Module;
+import com.ooad.lms.model.Submission;
+import com.ooad.lms.service.CourseService;
+import com.ooad.lms.service.InstructorService;
+import com.ooad.lms.service.StudentService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/instructor")
@@ -47,6 +59,17 @@ public class InstructorController {
         return courseService.addMaterial(instructorId, courseId, moduleId, request);
     }
 
+    @PostMapping(value = "/courses/{courseId}/modules/{moduleId}/materials/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Material uploadPdfMaterial(
+            @PathVariable Long courseId,
+            @PathVariable Long moduleId,
+            @RequestParam Long instructorId,
+            @RequestParam String name,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return courseService.uploadPdfMaterial(instructorId, courseId, moduleId, name, file);
+    }
+
     @PostMapping("/courses/{courseId}/assignments")
     public Assignment createAssignment(
             @PathVariable Long courseId,
@@ -56,8 +79,27 @@ public class InstructorController {
         return courseService.createAssignment(instructorId, courseId, request);
     }
 
+    @PostMapping(value = "/courses/{courseId}/assignments/{assignmentId}/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public void uploadAssignmentPdf(
+            @PathVariable Long courseId,
+            @PathVariable Long assignmentId,
+            @RequestParam Long instructorId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        courseService.uploadAssignmentPdf(instructorId, courseId, assignmentId, file);
+    }
+
+    @PostMapping("/courses/{courseId}/exams")
+    public Exam createExam(
+            @PathVariable Long courseId,
+            @RequestParam Long instructorId,
+            @Valid @RequestBody CreateExamRequest request
+    ) {
+        return courseService.addExam(instructorId, courseId, request);
+    }
+
     @GetMapping("/courses/{courseId}/assignments/{assignmentId}/submissions")
-    public List<Submission> getSubmissions(
+    public List<SubmissionViewResponse> getSubmissions(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId,
             @RequestParam Long instructorId
@@ -75,8 +117,44 @@ public class InstructorController {
         return instructorService.gradeSubmission(instructorId, courseId, submissionId, request);
     }
 
+        @GetMapping("/courses/{courseId}/submissions/{submissionId}/download")
+        public ResponseEntity<Resource> downloadSubmittedAssignmentPdf(
+            @PathVariable Long courseId,
+            @PathVariable Long submissionId,
+            @RequestParam Long instructorId
+        ) {
+        StudentService.MaterialDownload download = instructorService
+            .downloadSubmittedAssignmentPdf(instructorId, courseId, submissionId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment().filename(download.fileName()).build());
+
+        return ResponseEntity.ok()
+            .headers(headers)
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(download.resource());
+        }
+
     @GetMapping("/courses/{courseId}/students")
     public List<Long> viewStudentProgress(@PathVariable Long courseId, @RequestParam Long instructorId) {
         return instructorService.viewStudentProgress(instructorId, courseId);
+    }
+
+    @GetMapping("/courses/{courseId}/assignments/{assignmentId}/pdf")
+    public ResponseEntity<Resource> downloadAssignmentPdf(
+            @PathVariable Long courseId,
+            @PathVariable Long assignmentId,
+            @RequestParam Long instructorId
+    ) {
+        instructorService.viewStudentProgress(instructorId, courseId);
+        CourseService.MaterialDownload download = courseService.getAssignmentPdf(assignmentId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment().filename(download.fileName()).build());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(download.resource());
     }
 }
