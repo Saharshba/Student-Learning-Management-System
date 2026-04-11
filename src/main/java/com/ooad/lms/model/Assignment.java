@@ -4,7 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Assignment {
+public class Assignment implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private Long assignmentId;
     private String description;
     private LocalDateTime deadline;
@@ -29,6 +30,10 @@ public class Assignment {
 
     public Long getAssignmentId() {
         return assignmentId;
+    }
+
+    public void setAssignmentId(Long assignmentId) {
+        this.assignmentId = assignmentId;
     }
 
     public String getDescription() {

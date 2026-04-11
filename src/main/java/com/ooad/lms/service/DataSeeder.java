@@ -7,6 +7,7 @@ import com.ooad.lms.dto.UploadMaterialRequest;
 import com.ooad.lms.model.Course;
 import com.ooad.lms.model.MaterialType;
 import com.ooad.lms.model.Role;
+import com.ooad.lms.repository.InMemoryDataStore;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
@@ -14,14 +15,20 @@ import org.springframework.stereotype.Component;
 public class DataSeeder {
     private final UserService userService;
     private final CourseService courseService;
+    private final InMemoryDataStore dataStore;
 
-    public DataSeeder(UserService userService, CourseService courseService) {
+    public DataSeeder(UserService userService, CourseService courseService, InMemoryDataStore dataStore) {
         this.userService = userService;
         this.courseService = courseService;
+        this.dataStore = dataStore;
     }
 
     @PostConstruct
     public void seed() {
+        if (!dataStore.users().isEmpty()) {
+            return;
+        }
+
         userService.register(new RegisterRequest("System Admin", "admin@lms.com", "admin123", Role.ADMINISTRATOR));
         var instructor = userService.register(new RegisterRequest("Course Instructor", "instructor@lms.com", "teach123", Role.INSTRUCTOR));
         userService.register(new RegisterRequest("Student User", "student@lms.com", "learn123", Role.STUDENT));

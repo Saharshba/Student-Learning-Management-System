@@ -2,7 +2,8 @@ package com.ooad.lms.model;
 
 import java.time.LocalDateTime;
 
-public class Submission {
+public class Submission implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private Long submissionId;
     private Long studentId;
     private Long assignmentId;

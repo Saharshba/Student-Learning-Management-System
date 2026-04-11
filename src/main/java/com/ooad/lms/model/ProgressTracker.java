@@ -4,7 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProgressTracker {
+public class ProgressTracker implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private int totalModules;
     private int completedModules;
 

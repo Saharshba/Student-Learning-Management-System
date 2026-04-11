@@ -140,12 +140,19 @@ async function loadCourses() {
         if (!allCourses.length) { el.innerHTML = '<div class="empty-state">No courses available yet.</div>'; return; }
         el.innerHTML = allCourses.map(c => {
             const enrolled = c.enrolledStudentIds && c.enrolledStudentIds.includes(user.userId);
-            const modulesHtml = (c.modules || []).map(m =>
-                `<div class="module-row">
-                    <strong>${esc(m.title)}</strong>
-                    <span class="muted">${(m.materials||[]).length} material(s)</span>
-                </div>`
-            ).join('');
+            const modulesHtml = (c.modules || []).map(m => {
+                const materialLinks = (m.materials || []).map(mat =>
+                    `<a class="link-button small" href="${esc(mat.contentUrl)}" target="_blank">${esc(mat.name)}${mat.fileType === 'PDF' ? ' (PDF)' : ''}</a>`
+                ).join(' ');
+
+                return `<div class="module-row">
+                    <div>
+                        <strong>${esc(m.title)}</strong>
+                        <span class="muted">${(m.materials||[]).length} material(s)</span>
+                    </div>
+                    ${materialLinks ? `<div class="module-materials">${materialLinks}</div>` : ''}
+                </div>`;
+            }).join('');
             const assignHtml = (c.assignments || []).map(a => {
                 const submitted = latestByAssignment[a.assignmentId];
                 const dueText = submitted

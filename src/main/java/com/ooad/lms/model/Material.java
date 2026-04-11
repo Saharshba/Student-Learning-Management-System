@@ -2,7 +2,8 @@ package com.ooad.lms.model;
 
 import java.time.LocalDateTime;
 
-public class Material {
+public class Material implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private Long fileId;
     private MaterialType fileType;
     private LocalDateTime uploadDate;
@@ -39,5 +40,9 @@ public class Material {
 
     public String getContentUrl() {
         return contentUrl;
+    }
+
+    public void setContentUrl(String contentUrl) {
+        this.contentUrl = contentUrl;
     }
 }

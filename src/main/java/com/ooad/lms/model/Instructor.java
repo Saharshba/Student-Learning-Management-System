@@ -3,7 +3,8 @@ package com.ooad.lms.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Instructor extends User {
+public class Instructor extends User implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private final List<Long> coursesHandled = new ArrayList<>();
 
     public Instructor(Long userId, String name, String email, String password) {

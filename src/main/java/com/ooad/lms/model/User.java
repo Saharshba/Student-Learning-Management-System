@@ -2,7 +2,8 @@ package com.ooad.lms.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public abstract class User {
+public abstract class User implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private Long userId;
     private String name;
     private String email;
