@@ -43,6 +43,25 @@
             <div id="courses-list" class="course-cards"></div>
         </div>
 
+        <div id="pdf-viewer-panel" class="pdf-viewer-panel hidden">
+            <div class="pdf-viewer-header">
+                <div>
+                    <h3 id="viewer-title">PDF Preview</h3>
+                    <p class="muted">View the document and ask questions directly below.</p>
+                </div>
+                <button class="btn-sm btn-danger" onclick="closePdfViewer()">Close</button>
+            </div>
+            <div class="pdf-viewer-body">
+                <iframe id="pdf-viewer-frame" src="" frameborder="0"></iframe>
+                <aside class="comment-sidebar">
+                    <div class="section-label">Discussion</div>
+                    <div id="comment-list" class="comment-list"></div>
+                    <textarea id="comment-input" class="comment-input" placeholder="Ask a question about this PDF..."></textarea>
+                    <button class="btn-submit" onclick="postComment()">Post Question</button>
+                </aside>
+            </div>
+        </div>
+
         <!-- Grades Tab -->
         <div id="tab-grades" class="tab-panel">
             <div class="panel-header">
@@ -108,7 +127,9 @@ async function apiFetch(url, opts = {}) {
         const err = await res.json().catch(() => ({ message: 'Request failed' }));
         throw new Error(err.message || 'Request failed');
     }
-    return res.json();
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
 }
 
 function toast(msg, ok = true) {
@@ -142,8 +163,11 @@ async function loadCourses() {
             const enrolled = c.enrolledStudentIds && c.enrolledStudentIds.includes(user.userId);
             const modulesHtml = (c.modules || []).map(m => {
                 const materialLinks = (m.materials || []).map(mat =>
-                    `<a class="link-button small" href="${esc(mat.contentUrl)}" target="_blank">${esc(mat.name)}${mat.fileType === 'PDF' ? ' (PDF)' : ''}</a>`
-                ).join(' ');
+                    `<div class="material-actions">
+                        <span>${esc(mat.name)}${mat.fileType === 'PDF' ? ' (PDF)' : ''}</span>
+                        ${mat.fileType === 'PDF' ? `<button class="btn-sm btn-primary" onclick="openPdfViewer(${mat.fileId}, '${escJs(mat.name)}', '${escJs(mat.contentUrl)}')">View PDF</button>` : ''}
+                    </div>`
+                ).join('');
 
                 return `<div class="module-row">
                     <div>
@@ -317,9 +341,74 @@ async function loadNotifications() {
     }
 }
 
+let activeMaterialId = null;
+
+function openPdfViewer(materialId, title, contentUrl) {
+    activeMaterialId = materialId;
+    document.getElementById('viewer-title').textContent = title;
+    const src = contentUrl && contentUrl.length ? contentUrl : `/api/materials/${materialId}/download`;
+    document.getElementById('pdf-viewer-frame').src = src;
+    document.getElementById('pdf-viewer-panel').classList.remove('hidden');
+    document.getElementById('comment-input').value = '';
+    loadMaterialComments(materialId);
+}
+
+function closePdfViewer() {
+    document.getElementById('pdf-viewer-panel').classList.add('hidden');
+    document.getElementById('pdf-viewer-frame').src = '';
+}
+
+async function loadMaterialComments(materialId) {
+    const list = document.getElementById('comment-list');
+    list.innerHTML = '<div class="loading">Loading comments…</div>';
+    try {
+        const comments = await apiFetch(`/api/materials/${materialId}/comments`);
+        list.innerHTML = comments.length
+            ? comments.map(c => `
+                <div class="comment-card">
+                    <div class="comment-meta"><strong>${esc(c.authorName)}</strong> <span class="muted">${c.timestamp ? new Date(c.timestamp).toLocaleString() : ''}</span></div>
+                    <p>${esc(c.message)}</p>
+                    ${c.reply ? `<div class="comment-reply"><strong>${esc(c.replyAuthorName)}</strong> replied: <span>${esc(c.reply)}</span></div>` : ''}
+                </div>
+            `).join('')
+            : '<div class="empty-state">No questions yet. Be the first to ask!</div>';
+    } catch (e) {
+        list.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+async function postComment() {
+    if (!activeMaterialId) {
+        toast('Open a PDF before posting a question.', false);
+        return;
+    }
+    const message = document.getElementById('comment-input').value.trim();
+    if (!message) {
+        toast('Write your question before posting.', false);
+        return;
+    }
+    try {
+        await apiFetch(`/api/materials/${activeMaterialId}/comments?studentId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+        });
+        toast('Question posted. Your instructor can reply here.');
+        document.getElementById('comment-input').value = '';
+        loadMaterialComments(activeMaterialId);
+    } catch (e) {
+        toast(e.message, false);
+    }
+}
+
 function esc(s) {
     if (!s) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escJs(s) {
+    if (!s) return '';
+    return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
 // Bootstrap

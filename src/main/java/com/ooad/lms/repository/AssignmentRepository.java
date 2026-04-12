@@ -25,4 +25,9 @@ public class AssignmentRepository {
         dataStore.persist();
         return assignment;
     }
+
+    public void deleteById(Long id) {
+        dataStore.assignments().remove(id);
+        dataStore.persist();
+    }
 }

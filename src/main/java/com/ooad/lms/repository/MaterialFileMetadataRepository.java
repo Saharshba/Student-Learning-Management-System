@@ -25,4 +25,9 @@ public class MaterialFileMetadataRepository {
         dataStore.persist();
         return metadata;
     }
+
+    public void deleteById(Long id) {
+        dataStore.materialFileMetadata().remove(id);
+        dataStore.persist();
+    }
 }

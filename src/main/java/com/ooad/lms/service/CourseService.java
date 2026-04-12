@@ -161,6 +161,32 @@ public class CourseService {
         return assignment;
     }
 
+    public void deleteAssignment(Long instructorId, Long courseId, Long assignmentId) {
+        validateInstructorForCourse(instructorId, courseId);
+        Course course = getCourse(courseId);
+        boolean removed = course.getAssignments().removeIf(a -> a.getAssignmentId().equals(assignmentId));
+        if (!removed) {
+            throw new NotFoundException("Assignment not found");
+        }
+        assignmentRepository.deleteById(assignmentId);
+        courseRepository.save(course);
+    }
+
+    public void deleteMaterial(Long instructorId, Long courseId, Long moduleId, Long materialId) {
+        validateInstructorForCourse(instructorId, courseId);
+        Module module = getCourse(courseId).getModules().stream()
+                .filter(existing -> existing.getModuleId().equals(moduleId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Module not found"));
+
+        boolean removed = module.getMaterials().removeIf(material -> material.getFileId().equals(materialId));
+        if (!removed) {
+            throw new NotFoundException("Material not found");
+        }
+        materialFileMetadataRepository.deleteById(materialId);
+        courseRepository.save(getCourse(courseId));
+    }
+
     public Exam addExam(Long instructorId, Long courseId, CreateExamRequest request) {
         validateInstructorForCourse(instructorId, courseId);
         Exam exam = new Exam(

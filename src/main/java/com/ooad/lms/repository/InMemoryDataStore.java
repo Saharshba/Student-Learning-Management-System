@@ -36,6 +36,7 @@ public class InMemoryDataStore implements Serializable {
     private final AtomicLong assignmentFileMetadataIds = new AtomicLong(1);
     private final AtomicLong materialFileMetadataIds = new AtomicLong(1);
     private final AtomicLong submissionFileMetadataIds = new AtomicLong(1);
+    private final AtomicLong materialCommentIds = new AtomicLong(1);
 
     private final Map<Long, User> users = new ConcurrentHashMap<>();
     private final Map<Long, Course> courses = new ConcurrentHashMap<>();
@@ -44,6 +45,7 @@ public class InMemoryDataStore implements Serializable {
     private final Map<Long, AssignmentFileMetadata> assignmentFileMetadata = new ConcurrentHashMap<>();
     private final Map<Long, MaterialFileMetadata> materialFileMetadata = new ConcurrentHashMap<>();
     private final Map<Long, SubmissionFileMetadata> submissionFileMetadata = new ConcurrentHashMap<>();
+    private final Map<Long, com.ooad.lms.model.MaterialComment> materialComments = new ConcurrentHashMap<>();
 
     private transient Path persistenceFile;
 
@@ -68,7 +70,7 @@ public class InMemoryDataStore implements Serializable {
                 copyFrom(stored);
                 repairAssignmentsFromCourses();
             }
-        } catch (IOException | ClassNotFoundException ex) {
+        } catch (IOException | ClassNotFoundException | ClassCastException ex) {
             try {
                 Files.deleteIfExists(persistenceFile);
             } catch (IOException ignored) {
@@ -101,30 +103,50 @@ public class InMemoryDataStore implements Serializable {
         materialIds.set(other.materialIds.get());
         assignmentIds.set(other.assignmentIds.get());
         submissionIds.set(other.submissionIds.get());
-        assignmentFileMetadataIds.set(other.assignmentFileMetadataIds.get());
-        materialFileMetadataIds.set(other.materialFileMetadataIds.get());
-        submissionFileMetadataIds.set(other.submissionFileMetadataIds.get());
+        assignmentFileMetadataIds.set(other.assignmentFileMetadataIds == null ? 1 : other.assignmentFileMetadataIds.get());
+        materialFileMetadataIds.set(other.materialFileMetadataIds == null ? 1 : other.materialFileMetadataIds.get());
+        submissionFileMetadataIds.set(other.submissionFileMetadataIds == null ? 1 : other.submissionFileMetadataIds.get());
+        materialCommentIds.set(other.materialCommentIds == null ? 1 : other.materialCommentIds.get());
 
         users.clear();
-        users.putAll(other.users);
+        if (other.users != null) {
+            users.putAll(other.users);
+        }
 
         courses.clear();
-        courses.putAll(other.courses);
+        if (other.courses != null) {
+            courses.putAll(other.courses);
+        }
 
         assignments.clear();
-        assignments.putAll(other.assignments);
+        if (other.assignments != null) {
+            assignments.putAll(other.assignments);
+        }
 
         submissions.clear();
-        submissions.putAll(other.submissions);
+        if (other.submissions != null) {
+            submissions.putAll(other.submissions);
+        }
 
         assignmentFileMetadata.clear();
-        assignmentFileMetadata.putAll(other.assignmentFileMetadata);
+        if (other.assignmentFileMetadata != null) {
+            assignmentFileMetadata.putAll(other.assignmentFileMetadata);
+        }
 
         materialFileMetadata.clear();
-        materialFileMetadata.putAll(other.materialFileMetadata);
+        if (other.materialFileMetadata != null) {
+            materialFileMetadata.putAll(other.materialFileMetadata);
+        }
 
         submissionFileMetadata.clear();
-        submissionFileMetadata.putAll(other.submissionFileMetadata);
+        if (other.submissionFileMetadata != null) {
+            submissionFileMetadata.putAll(other.submissionFileMetadata);
+        }
+
+        materialComments.clear();
+        if (other.materialComments != null) {
+            materialComments.putAll(other.materialComments);
+        }
     }
 
     public long nextUserId() {
@@ -161,6 +183,10 @@ public class InMemoryDataStore implements Serializable {
 
     public long nextSubmissionFileMetadataId() {
         return submissionFileMetadataIds.getAndIncrement();
+    }
+
+    public long nextMaterialCommentId() {
+        return materialCommentIds.getAndIncrement();
     }
 
     public Map<Long, User> users() {
@@ -203,5 +229,9 @@ public class InMemoryDataStore implements Serializable {
 
     public Map<Long, SubmissionFileMetadata> submissionFileMetadata() {
         return submissionFileMetadata;
+    }
+
+    public Map<Long, com.ooad.lms.model.MaterialComment> materialComments() {
+        return materialComments;
     }
 }
