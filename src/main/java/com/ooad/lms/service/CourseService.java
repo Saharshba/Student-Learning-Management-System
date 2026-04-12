@@ -21,9 +21,10 @@ import com.ooad.lms.model.MaterialFileMetadata;
 import com.ooad.lms.model.MaterialType;
 import com.ooad.lms.model.Module;
 import com.ooad.lms.model.Role;
-import com.ooad.lms.repository.AssignmentRepository;
 import com.ooad.lms.repository.AssignmentFileMetadataRepository;
+import com.ooad.lms.repository.AssignmentRepository;
 import com.ooad.lms.repository.CourseRepository;
+import com.ooad.lms.repository.InMemoryDataStore;
 import com.ooad.lms.repository.MaterialFileMetadataRepository;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,6 +36,7 @@ public class CourseService {
     private final FileStorageService fileStorageService;
     private final MaterialFileMetadataRepository materialFileMetadataRepository;
     private final AssignmentFileMetadataRepository assignmentFileMetadataRepository;
+    private final InMemoryDataStore dataStore;
 
     public CourseService(
             CourseRepository courseRepository,
@@ -42,7 +44,8 @@ public class CourseService {
             UserService userService,
             FileStorageService fileStorageService,
                 MaterialFileMetadataRepository materialFileMetadataRepository,
-                AssignmentFileMetadataRepository assignmentFileMetadataRepository
+                AssignmentFileMetadataRepository assignmentFileMetadataRepository,
+                InMemoryDataStore dataStore
     ) {
         this.courseRepository = courseRepository;
         this.assignmentRepository = assignmentRepository;
@@ -50,6 +53,7 @@ public class CourseService {
         this.fileStorageService = fileStorageService;
         this.materialFileMetadataRepository = materialFileMetadataRepository;
         this.assignmentFileMetadataRepository = assignmentFileMetadataRepository;
+        this.dataStore = dataStore;
     }
 
     public Course createCourse(CreateCourseRequest request) {
@@ -88,7 +92,8 @@ public class CourseService {
 
     public Module addModule(Long instructorId, Long courseId, CreateModuleRequest request) {
         validateInstructorForCourse(instructorId, courseId);
-        Module module = new Module(null, request.title());
+        Long moduleId = dataStore.nextModuleId();
+        Module module = new Module(moduleId, request.title());
         Course course = getCourse(courseId);
         course.addModule(module);
         courseRepository.save(course);
@@ -103,7 +108,7 @@ public class CourseService {
                 .orElseThrow(() -> new NotFoundException("Module not found"));
 
         Material material = new Material(
-            null,
+                dataStore.nextMaterialId(),
                 request.fileType(),
                 LocalDateTime.now(),
                 request.name(),
@@ -126,42 +131,60 @@ public class CourseService {
                 .orElseThrow(() -> new NotFoundException("Module not found"));
 
         FileStorageService.StoredFile storedFile = fileStorageService.storePdf(file);
+        Long materialId = dataStore.nextMaterialId();
         Material material = new Material(
-            null,
+                materialId,
                 MaterialType.PDF,
                 LocalDateTime.now(),
                 name,
-            "pending"
+                "/api/materials/" + materialId + "/download"
         );
         module.addMaterial(material);
-        Course saved = courseRepository.save(getCourse(courseId));
-
-        Material persistedMaterial = saved.getModules().stream()
-            .filter(m -> m.getModuleId().equals(moduleId))
-            .flatMap(m -> m.getMaterials().stream())
-            .filter(m -> "pending".equals(m.getContentUrl()))
-            .reduce((first, second) -> second)
-            .orElseThrow(() -> new NotFoundException("Saved material not found"));
-
-        persistedMaterial.setContentUrl("/api/students/{studentId}/materials/" + persistedMaterial.getFileId() + "/download");
-        courseRepository.save(saved);
+        courseRepository.save(getCourse(courseId));
 
         materialFileMetadataRepository.save(new MaterialFileMetadata(
-            persistedMaterial.getFileId(),
-            storedFile.storagePath(),
-            storedFile.originalFileName()
+                materialId,
+                storedFile.storagePath(),
+                storedFile.originalFileName()
         ));
-        return persistedMaterial;
+        return material;
     }
 
     public Assignment createAssignment(Long instructorId, Long courseId, CreateAssignmentRequest request) {
         validateInstructorForCourse(instructorId, courseId);
         Assignment assignment = new Assignment(null, request.description(), request.deadline());
         assignment.publish();
+        assignment = assignmentRepository.save(assignment);
         Course course = getCourse(courseId);
         course.addAssignment(assignment);
         courseRepository.save(course);
         return assignment;
+    }
+
+    public void deleteAssignment(Long instructorId, Long courseId, Long assignmentId) {
+        validateInstructorForCourse(instructorId, courseId);
+        Course course = getCourse(courseId);
+        boolean removed = course.getAssignments().removeIf(a -> a.getAssignmentId().equals(assignmentId));
+        if (!removed) {
+            throw new NotFoundException("Assignment not found");
+        }
+        assignmentRepository.deleteById(assignmentId);
+        courseRepository.save(course);
+    }
+
+    public void deleteMaterial(Long instructorId, Long courseId, Long moduleId, Long materialId) {
+        validateInstructorForCourse(instructorId, courseId);
+        Module module = getCourse(courseId).getModules().stream()
+                .filter(existing -> existing.getModuleId().equals(moduleId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Module not found"));
+
+        boolean removed = module.getMaterials().removeIf(material -> material.getFileId().equals(materialId));
+        if (!removed) {
+            throw new NotFoundException("Material not found");
+        }
+        materialFileMetadataRepository.deleteById(materialId);
+        courseRepository.save(getCourse(courseId));
     }
 
     public Exam addExam(Long instructorId, Long courseId, CreateExamRequest request) {

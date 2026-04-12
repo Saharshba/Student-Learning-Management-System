@@ -3,13 +3,15 @@ package com.ooad.lms.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Course {
+public class Course implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private Long courseId;
     private String title;
     private String description;
     private Long instructorId;
     private final List<Module> modules = new ArrayList<>();
     private final List<Assignment> assignments = new ArrayList<>();
+    private final List<Exam> exams = new ArrayList<>();
     private final List<Long> enrolledStudentIds = new ArrayList<>();
 
     public Course(Long courseId, String title, String description) {
@@ -30,6 +32,10 @@ public class Course {
         assignments.add(assignment);
     }
 
+    public void addExam(Exam exam) {
+        exams.add(exam);
+    }
+
     public void enrollStudent(Long studentId) {
         if (!enrolledStudentIds.contains(studentId)) {
             enrolledStudentIds.add(studentId);
@@ -44,8 +50,16 @@ public class Course {
         return title;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public String getDescription() {
         return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public List<Module> getModules() {
@@ -54,6 +68,10 @@ public class Course {
 
     public List<Assignment> getAssignments() {
         return assignments;
+    }
+
+    public List<Exam> getExams() {
+        return exams;
     }
 
     public List<Long> getEnrolledStudentIds() {

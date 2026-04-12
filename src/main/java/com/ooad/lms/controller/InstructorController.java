@@ -2,6 +2,7 @@ package com.ooad.lms.controller;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -87,6 +88,25 @@ public class InstructorController {
             @RequestParam("file") MultipartFile file
     ) {
         courseService.uploadAssignmentPdf(instructorId, courseId, assignmentId, file);
+    }
+
+    @DeleteMapping("/courses/{courseId}/assignments/{assignmentId}")
+    public void deleteAssignment(
+            @PathVariable Long courseId,
+            @PathVariable Long assignmentId,
+            @RequestParam Long instructorId
+    ) {
+        courseService.deleteAssignment(instructorId, courseId, assignmentId);
+    }
+
+    @DeleteMapping("/courses/{courseId}/modules/{moduleId}/materials/{materialId}")
+    public void deleteMaterial(
+            @PathVariable Long courseId,
+            @PathVariable Long moduleId,
+            @PathVariable Long materialId,
+            @RequestParam Long instructorId
+    ) {
+        courseService.deleteMaterial(instructorId, courseId, moduleId, materialId);
     }
 
     @PostMapping("/courses/{courseId}/exams")

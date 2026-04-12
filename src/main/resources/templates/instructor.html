@@ -38,6 +38,22 @@
                 <button class="btn-refresh" onclick="loadCourses()">&#8635; Refresh</button>
             </div>
             <div id="courses-list" class="course-cards"></div>
+
+            <div id="comment-panel" class="comment-panel hidden">
+                <div class="pdf-viewer-header">
+                    <div>
+                        <h3 id="comment-title">Material Comments</h3>
+                        <p class="muted">Review student questions and reply directly.</p>
+                    </div>
+                    <button class="btn-sm btn-danger" onclick="closeCommentPanel()">Close</button>
+                </div>
+                <div class="pdf-viewer-body">
+                    <iframe id="instructor-pdf-viewer" class="pdf-viewer-frame" src="" frameborder="0"></iframe>
+                    <aside class="comment-sidebar">
+                        <div id="comment-list" class="comment-list"></div>
+                    </aside>
+                </div>
+            </div>
         </div>
 
         <!-- Add Content Tab -->
@@ -154,7 +170,9 @@ async function apiFetch(url, opts = {}) {
         const err = await res.json().catch(() => ({ message: 'Request failed' }));
         throw new Error(err.message || 'Request failed');
     }
-    return res.json();
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
 }
 
 function toast(msg, ok = true) {
@@ -178,14 +196,29 @@ async function loadCourses() {
         myCourses = all.filter(c => String(c.instructorId) === String(user.userId));
         if (!myCourses.length) { el.innerHTML = '<div class="empty-state">No courses assigned to you yet. Ask an admin to assign a course.</div>'; return; }
         el.innerHTML = myCourses.map(c => {
-            const modulesHtml = (c.modules || []).map(m =>
-                `<div class="module-row">
-                    <strong>${esc(m.title)}</strong>
-                    <span class="muted">${(m.materials||[]).length} material(s)</span>
-                </div>`).join('');
+            const modulesHtml = (c.modules || []).map(m => {
+                const materialActions = (m.materials || []).map(mat =>
+                    `<div class="material-actions">
+                        <span>${esc(mat.name)}${mat.fileType === 'PDF' ? ' (PDF)' : ''}</span>
+                        ${mat.fileType === 'PDF' ? `<button class="btn-sm btn-primary" onclick="openPdfViewer(${mat.fileId}, '${escJs(mat.name)}', '${escJs(mat.contentUrl)}')">View</button>` : ''}
+                        <button class="btn-sm btn-blue" onclick="loadMaterialComments(${mat.fileId}, ${c.courseId}, ${m.moduleId})">Comments</button>
+                        <button class="btn-sm btn-danger" onclick="deleteMaterial(${c.courseId}, ${m.moduleId}, ${mat.fileId})">Delete</button>
+                    </div>`
+                ).join('');
+                return `<div class="module-row">
+                    <div>
+                        <strong>${esc(m.title)}</strong>
+                        <span class="muted">${(m.materials||[]).length} material(s)</span>
+                    </div>
+                    ${materialActions ? `<div class="module-materials">${materialActions}</div>` : ''}
+                </div>`;
+            }).join('');
             const assignHtml = (c.assignments || []).map(a =>
                 `<div class="assign-row">
-                    <span class="assign-desc">${esc(a.description)}</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <span><strong>${esc(a.description)}</strong></span>
+                        <button class="btn-sm btn-danger" onclick="deleteAssignment(${c.courseId}, ${a.assignmentId})">Delete</button>
+                    </div>
                     <span class="muted small">Due: ${a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'} &nbsp;|&nbsp; ${a.submissions?.length || 0} submission(s)</span>
                 </div>`).join('');
             return `<div class="dash-course-card">
@@ -390,6 +423,96 @@ async function gradeSubmission(courseId, submissionId) {
         toast('Grade saved!');
         loadSubmissions();
     } catch (e) { toast(e.message, false); }
+}
+
+let activeMaterialId = null;
+
+function escJs(s) {
+    if (!s) return '';
+    return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+function openPdfViewer(materialId, title, contentUrl) {
+    activeMaterialId = materialId;
+    document.getElementById('comment-title').textContent = title;
+    const src = contentUrl && contentUrl.length ? contentUrl : `/api/materials/${materialId}/download`;
+    document.getElementById('instructor-pdf-viewer').src = src;
+    document.getElementById('comment-panel').classList.remove('hidden');
+    loadMaterialComments(materialId);
+}
+
+function closeCommentPanel() {
+    document.getElementById('comment-panel').classList.add('hidden');
+    document.getElementById('comment-list').innerHTML = '';
+    document.getElementById('instructor-pdf-viewer').src = '';
+}
+
+async function loadMaterialComments(materialId, courseId, moduleId) {
+    activeMaterialId = materialId;
+    const list = document.getElementById('comment-list');
+    list.innerHTML = '<div class="loading">Loading comments…</div>';
+    try {
+        const comments = await apiFetch(`/api/materials/${materialId}/comments`);
+        list.innerHTML = comments.length
+            ? comments.map(c => `
+                <div class="comment-card">
+                    <div class="comment-meta"><strong>${esc(c.authorName)}</strong> <span class="muted">${c.timestamp ? new Date(c.timestamp).toLocaleString() : ''}</span></div>
+                    <p>${esc(c.message)}</p>
+                    ${c.reply ? `<div class="comment-reply"><strong>${esc(c.replyAuthorName)}</strong> replied: <span>${esc(c.reply)}</span></div>` : `<div>
+                        <textarea id="reply-${c.commentId}" class="comment-input" placeholder="Reply to this question..."></textarea>
+                        <button class="btn-sm btn-primary" onclick="replyToComment(${materialId}, ${c.commentId})">Reply</button>
+                    </div>`}
+                </div>
+            `).join('')
+            : '<div class="empty-state">No questions yet for this PDF.</div>';
+    } catch (e) {
+        list.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+async function replyToComment(materialId, commentId) {
+    const reply = document.getElementById('reply-' + commentId).value.trim();
+    if (!reply) { toast('Enter a reply before sending.', false); return; }
+    try {
+        await apiFetch(`/api/materials/${materialId}/comments/${commentId}/reply?instructorId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reply })
+        });
+        toast('Reply sent!');
+        loadMaterialComments(materialId);
+    } catch (e) {
+        toast(e.message, false);
+    }
+}
+
+async function deleteMaterial(courseId, moduleId, materialId) {
+    if (!confirm('Delete this material? This action cannot be undone.')) return;
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/modules/${moduleId}/materials/${materialId}?instructorId=${user.userId}`, {
+            method: 'DELETE'
+        });
+        toast('Material deleted.');
+        await refreshCourses();
+        await loadCourses();
+        closeCommentPanel();
+    } catch (e) {
+        toast(e.message, false);
+    }
+}
+
+async function deleteAssignment(courseId, assignmentId) {
+    if (!confirm('Delete this assignment? This action cannot be undone.')) return;
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/assignments/${assignmentId}?instructorId=${user.userId}`, {
+            method: 'DELETE'
+        });
+        toast('Assignment deleted.');
+        await refreshCourses();
+        await loadCourses();
+    } catch (e) {
+        toast(e.message, false);
+    }
 }
 
 (async function init() {

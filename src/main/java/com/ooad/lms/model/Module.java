@@ -3,7 +3,8 @@ package com.ooad.lms.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Module {
+public class Module implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private Long moduleId;
     private String title;
     private final List<Material> materials = new ArrayList<>();

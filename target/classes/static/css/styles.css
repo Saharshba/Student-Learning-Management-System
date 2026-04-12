@@ -822,6 +822,22 @@ main {
 .btn-primary { background: var(--text); color: #fff; }
 .btn-danger   { background: #ef4444; color: #fff; }
 
+.link-button {
+    display: inline-flex;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(15,118,110,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(15,118,110,0.18);
+    font-size: 0.9rem;
+    margin: 4px 2px 0 0;
+}
+
+.link-button:hover {
+    background: rgba(15,118,110,0.16);
+}
+
 /* ── Data table ── */
 .data-table {
     width: 100%;
