@@ -2,6 +2,11 @@ package com.ooad.lms.controller;
 
 import java.util.List;
 
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,16 +16,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 
 import com.ooad.lms.dto.CreateAssignmentRequest;
 import com.ooad.lms.dto.CreateExamRequest;
 import com.ooad.lms.dto.CreateModuleRequest;
 import com.ooad.lms.dto.GradeSubmissionRequest;
+import com.ooad.lms.dto.MaterialCommentThreadResponse;
+import com.ooad.lms.dto.NotificationDTO;
 import com.ooad.lms.dto.SubmissionViewResponse;
 import com.ooad.lms.dto.UploadMaterialRequest;
 import com.ooad.lms.model.Assignment;
@@ -30,6 +32,8 @@ import com.ooad.lms.model.Module;
 import com.ooad.lms.model.Submission;
 import com.ooad.lms.service.CourseService;
 import com.ooad.lms.service.InstructorService;
+import com.ooad.lms.service.MaterialCommentService;
+import com.ooad.lms.service.NotificationService;
 import com.ooad.lms.service.StudentService;
 
 import jakarta.validation.Valid;
@@ -39,10 +43,17 @@ import jakarta.validation.Valid;
 public class InstructorController {
     private final CourseService courseService;
     private final InstructorService instructorService;
+    private final MaterialCommentService materialCommentService;
+    private final NotificationService notificationService;
 
-    public InstructorController(CourseService courseService, InstructorService instructorService) {
+    public InstructorController(CourseService courseService,
+                                InstructorService instructorService,
+                                MaterialCommentService materialCommentService,
+                                NotificationService notificationService) {
         this.courseService = courseService;
         this.instructorService = instructorService;
+        this.materialCommentService = materialCommentService;
+        this.notificationService = notificationService;
     }
 
     @PostMapping("/courses/{courseId}/modules")
@@ -127,6 +138,21 @@ public class InstructorController {
         return instructorService.getSubmissions(instructorId, courseId, assignmentId);
     }
 
+    @GetMapping("/{instructorId}/comments")
+    public List<MaterialCommentThreadResponse> getCommentThreads(@PathVariable Long instructorId) {
+        return materialCommentService.getCommentThreadsForInstructor(instructorId);
+    }
+
+    @GetMapping("/{instructorId}/notifications")
+    public List<NotificationDTO> getNotifications(@PathVariable Long instructorId) {
+        return notificationService.getNotificationsForUser(instructorId);
+    }
+
+    @GetMapping("/{instructorId}/notifications/count")
+    public long getNotificationCount(@PathVariable Long instructorId) {
+        return notificationService.getUnreadCountForUser(instructorId);
+    }
+
     @PostMapping("/courses/{courseId}/submissions/{submissionId}/grade")
     public Submission gradeSubmission(
             @PathVariable Long courseId,
@@ -137,8 +163,8 @@ public class InstructorController {
         return instructorService.gradeSubmission(instructorId, courseId, submissionId, request);
     }
 
-        @GetMapping("/courses/{courseId}/submissions/{submissionId}/download")
-        public ResponseEntity<Resource> downloadSubmittedAssignmentPdf(
+    @GetMapping("/courses/{courseId}/submissions/{submissionId}/download")
+    public ResponseEntity<Resource> downloadSubmittedAssignmentPdf(
             @PathVariable Long courseId,
             @PathVariable Long submissionId,
             @RequestParam Long instructorId

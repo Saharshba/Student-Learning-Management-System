@@ -1,30 +1,33 @@
 package com.ooad.lms.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.ooad.lms.dto.NotificationDTO;
+import com.ooad.lms.dto.SubmissionViewResponse;
 import com.ooad.lms.dto.SubmitAssignmentRequest;
 import com.ooad.lms.exception.BadRequestException;
 import com.ooad.lms.exception.NotFoundException;
 import com.ooad.lms.model.Assignment;
 import com.ooad.lms.model.Course;
+import com.ooad.lms.model.MaterialFileMetadata;
 import com.ooad.lms.model.ProgressTracker;
 import com.ooad.lms.model.Role;
 import com.ooad.lms.model.Student;
 import com.ooad.lms.model.Submission;
 import com.ooad.lms.model.SubmissionFileMetadata;
-import com.ooad.lms.model.MaterialFileMetadata;
-import org.springframework.core.io.Resource;
 import com.ooad.lms.repository.AssignmentRepository;
 import com.ooad.lms.repository.CourseRepository;
 import com.ooad.lms.repository.MaterialFileMetadataRepository;
 import com.ooad.lms.repository.SubmissionFileMetadataRepository;
 import com.ooad.lms.repository.SubmissionRepository;
 import com.ooad.lms.repository.UserRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class StudentService {
@@ -37,6 +40,7 @@ public class StudentService {
     private final FileStorageService fileStorageService;
     private final MaterialFileMetadataRepository materialFileMetadataRepository;
     private final SubmissionFileMetadataRepository submissionFileMetadataRepository;
+    private final NotificationService notificationService;
 
     public StudentService(
             CourseRepository courseRepository,
@@ -47,7 +51,8 @@ public class StudentService {
             CourseService courseService,
             FileStorageService fileStorageService,
                 MaterialFileMetadataRepository materialFileMetadataRepository,
-                SubmissionFileMetadataRepository submissionFileMetadataRepository
+                SubmissionFileMetadataRepository submissionFileMetadataRepository,
+                NotificationService notificationService
     ) {
         this.courseRepository = courseRepository;
         this.submissionRepository = submissionRepository;
@@ -58,6 +63,7 @@ public class StudentService {
         this.fileStorageService = fileStorageService;
         this.materialFileMetadataRepository = materialFileMetadataRepository;
         this.submissionFileMetadataRepository = submissionFileMetadataRepository;
+        this.notificationService = notificationService;
     }
 
     public Course enroll(Long studentId, Long courseId) {
@@ -138,9 +144,20 @@ public class StudentService {
         userRepository.save(student);
     }
 
-    public List<Submission> getGrades(Long studentId) {
+    public List<SubmissionViewResponse> getGrades(Long studentId) {
         userService.validateRole(studentId, Role.STUDENT);
-        return submissionRepository.findByStudentIdOrderByTimestampDesc(studentId);
+        return submissionRepository.findByStudentIdOrderByTimestampDesc(studentId).stream()
+                .map(submission -> new SubmissionViewResponse(
+                        submission.getSubmissionId(),
+                        submission.getStudentId(),
+                        submission.getAssignmentId(),
+                        submission.getTimestamp(),
+                        submission.getGrade(),
+                        submission.getContent(),
+                        submission.getFeedback(),
+                        submissionFileMetadataRepository.existsBySubmissionId(submission.getSubmissionId())
+                ))
+                .toList();
     }
 
     public Map<Long, Double> getProgress(Long studentId) {
@@ -158,11 +175,22 @@ public class StudentService {
     public List<String> getDeadlineNotifications(Long studentId) {
         userService.validateRole(studentId, Role.STUDENT);
         Student student = (Student) userService.getUser(studentId);
-        return student.getEnrolledCourses().stream()
+        List<String> notifications = student.getEnrolledCourses().stream()
                 .map(courseService::getCourse)
                 .flatMap(course -> new ProgressTracker(course.getModules().size(), 0)
                         .notifyDeadlines(course.getAssignments()).stream())
-                .toList();
+            .toList();
+
+        List<String> commentNotifications = notificationService.getMessagesForUser(studentId);
+        notifications = new java.util.ArrayList<>(notifications);
+        notifications.addAll(commentNotifications);
+        return notifications;
+    }
+
+    public List<NotificationDTO> getNotifications(Long studentId) {
+        userService.validateRole(studentId, Role.STUDENT);
+        List<NotificationDTO> commentNotifications = notificationService.getNotificationsForUser(studentId);
+        return commentNotifications;
     }
 
     private double calculateCourseProgress(Long studentId, Course course) {

@@ -4,6 +4,7 @@ import com.ooad.lms.model.Assignment;
 import com.ooad.lms.model.AssignmentFileMetadata;
 import com.ooad.lms.model.Course;
 import com.ooad.lms.model.MaterialFileMetadata;
+import com.ooad.lms.model.UserNotification;
 import com.ooad.lms.model.Submission;
 import com.ooad.lms.model.SubmissionFileMetadata;
 import com.ooad.lms.model.User;
@@ -37,6 +38,7 @@ public class InMemoryDataStore implements Serializable {
     private final AtomicLong materialFileMetadataIds = new AtomicLong(1);
     private final AtomicLong submissionFileMetadataIds = new AtomicLong(1);
     private final AtomicLong materialCommentIds = new AtomicLong(1);
+    private final AtomicLong notificationIds = new AtomicLong(1);
 
     private final Map<Long, User> users = new ConcurrentHashMap<>();
     private final Map<Long, Course> courses = new ConcurrentHashMap<>();
@@ -46,6 +48,7 @@ public class InMemoryDataStore implements Serializable {
     private final Map<Long, MaterialFileMetadata> materialFileMetadata = new ConcurrentHashMap<>();
     private final Map<Long, SubmissionFileMetadata> submissionFileMetadata = new ConcurrentHashMap<>();
     private final Map<Long, com.ooad.lms.model.MaterialComment> materialComments = new ConcurrentHashMap<>();
+    private final Map<Long, UserNotification> notifications = new ConcurrentHashMap<>();
 
     private transient Path persistenceFile;
 
@@ -107,6 +110,7 @@ public class InMemoryDataStore implements Serializable {
         materialFileMetadataIds.set(other.materialFileMetadataIds == null ? 1 : other.materialFileMetadataIds.get());
         submissionFileMetadataIds.set(other.submissionFileMetadataIds == null ? 1 : other.submissionFileMetadataIds.get());
         materialCommentIds.set(other.materialCommentIds == null ? 1 : other.materialCommentIds.get());
+        notificationIds.set(other.notificationIds == null ? 1 : other.notificationIds.get());
 
         users.clear();
         if (other.users != null) {
@@ -146,6 +150,11 @@ public class InMemoryDataStore implements Serializable {
         materialComments.clear();
         if (other.materialComments != null) {
             materialComments.putAll(other.materialComments);
+        }
+
+        notifications.clear();
+        if (other.notifications != null) {
+            notifications.putAll(other.notifications);
         }
     }
 
@@ -187,6 +196,10 @@ public class InMemoryDataStore implements Serializable {
 
     public long nextMaterialCommentId() {
         return materialCommentIds.getAndIncrement();
+    }
+
+    public long nextNotificationId() {
+        return notificationIds.getAndIncrement();
     }
 
     public Map<Long, User> users() {
@@ -233,5 +246,9 @@ public class InMemoryDataStore implements Serializable {
 
     public Map<Long, com.ooad.lms.model.MaterialComment> materialComments() {
         return materialComments;
+    }
+
+    public Map<Long, UserNotification> notifications() {
+        return notifications;
     }
 }

@@ -1,37 +1,44 @@
 package com.ooad.lms.controller;
 
-import com.ooad.lms.dto.SubmitAssignmentRequest;
-import com.ooad.lms.model.Course;
-import com.ooad.lms.model.Submission;
-import com.ooad.lms.service.CourseService;
-import com.ooad.lms.service.StudentService;
-import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Map;
+import com.ooad.lms.dto.NotificationDTO;
+import com.ooad.lms.dto.SubmissionViewResponse;
+import com.ooad.lms.dto.SubmitAssignmentRequest;
+import com.ooad.lms.model.Course;
+import com.ooad.lms.model.Submission;
+import com.ooad.lms.service.CourseService;
+import com.ooad.lms.service.NotificationService;
+import com.ooad.lms.service.StudentService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/students")
 public class StudentController {
     private final StudentService studentService;
     private final CourseService courseService;
+    private final NotificationService notificationService;
 
-    public StudentController(StudentService studentService, CourseService courseService) {
+    public StudentController(StudentService studentService, CourseService courseService, NotificationService notificationService) {
         this.studentService = studentService;
         this.courseService = courseService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/courses")
@@ -64,7 +71,7 @@ public class StudentController {
     }
 
     @GetMapping("/{studentId}/grades")
-    public List<Submission> getGrades(@PathVariable Long studentId) {
+    public List<SubmissionViewResponse> getGrades(@PathVariable Long studentId) {
         return studentService.getGrades(studentId);
     }
 
@@ -74,8 +81,13 @@ public class StudentController {
     }
 
     @GetMapping("/{studentId}/notifications")
-    public List<String> getNotifications(@PathVariable Long studentId) {
-        return studentService.getDeadlineNotifications(studentId);
+    public List<NotificationDTO> getNotifications(@PathVariable Long studentId) {
+        return studentService.getNotifications(studentId);
+    }
+
+    @GetMapping("/{studentId}/notifications/count")
+    public long getNotificationCount(@PathVariable Long studentId) {
+        return notificationService.getUnreadCountForUser(studentId);
     }
 
     @GetMapping("/{studentId}/materials/{materialId}/download")
@@ -86,7 +98,7 @@ public class StudentController {
         StudentService.MaterialDownload download = studentService.downloadMaterial(studentId, materialId);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentDisposition(ContentDisposition.attachment().filename(download.fileName()).build());
+        headers.setContentDisposition(ContentDisposition.inline().filename(download.fileName()).build());
 
         return ResponseEntity.ok()
                 .headers(headers)
