@@ -2,6 +2,8 @@ package com.ooad.lms.model;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MaterialComment implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -16,6 +18,7 @@ public class MaterialComment implements Serializable {
     private Long replyAuthorId;
     private String replyAuthorName;
     private LocalDateTime replyTimestamp;
+    private final List<CommentReply> replies = new ArrayList<>();
 
     public MaterialComment(Long commentId, Long materialId, Long authorId, String authorName, String message, LocalDateTime timestamp) {
         this.commentId = commentId;
@@ -66,6 +69,10 @@ public class MaterialComment implements Serializable {
         return replyTimestamp;
     }
 
+    public List<CommentReply> getReplies() {
+        return replies;
+    }
+
     public void setReply(String reply) {
         this.reply = reply;
     }
@@ -80,5 +87,23 @@ public class MaterialComment implements Serializable {
 
     public void setReplyTimestamp(LocalDateTime replyTimestamp) {
         this.replyTimestamp = replyTimestamp;
+    }
+
+    public void addReply(CommentReply reply) {
+        this.replies.add(reply);
+        setReply(reply.message());
+        setReplyAuthorId(reply.authorId());
+        setReplyAuthorName(reply.authorName());
+        setReplyTimestamp(reply.timestamp());
+    }
+
+    public record CommentReply(
+            Long authorId,
+            String authorName,
+            Role authorRole,
+            String message,
+            LocalDateTime timestamp
+    ) implements Serializable {
+        private static final long serialVersionUID = 1L;
     }
 }

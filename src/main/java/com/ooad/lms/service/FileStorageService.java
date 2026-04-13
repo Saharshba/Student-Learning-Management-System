@@ -1,16 +1,16 @@
 package com.ooad.lms.service;
 
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class FileStorageService {
@@ -30,7 +30,8 @@ public class FileStorageService {
         try {
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            return new StoredFile(targetLocation.toString(), file.getOriginalFilename());
+            // Store only the file name so persisted metadata remains portable across machines.
+            return new StoredFile(targetLocation.getFileName().toString(), file.getOriginalFilename());
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file " + fileName + ". Please try again!", ex);
         }
@@ -38,7 +39,22 @@ public class FileStorageService {
 
     public Resource loadAsResource(String filePath) {
         try {
-            Path filePathObj = Paths.get(filePath);
+            Path filePathObj = Paths.get(filePath).normalize();
+            if (!filePathObj.isAbsolute()) {
+                filePathObj = fileStorageLocation.resolve(filePathObj).normalize();
+            }
+
+            // Backward compatibility for older metadata that saved an absolute path on another machine.
+            if (!Files.exists(filePathObj) || !Files.isReadable(filePathObj)) {
+                Path fileNameOnlyPath = filePathObj.getFileName();
+                if (fileNameOnlyPath != null) {
+                    Path fallbackPath = fileStorageLocation.resolve(fileNameOnlyPath).normalize();
+                    if (Files.exists(fallbackPath) && Files.isReadable(fallbackPath)) {
+                        filePathObj = fallbackPath;
+                    }
+                }
+            }
+
             Resource resource = new UrlResource(filePathObj.toUri());
             if (resource.exists() || resource.isReadable()) {
                 return resource;

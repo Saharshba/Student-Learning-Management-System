@@ -1,13 +1,5 @@
 package com.ooad.lms.controller;
 
-import com.ooad.lms.dto.MaterialCommentRequest;
-import com.ooad.lms.dto.MaterialReplyRequest;
-import com.ooad.lms.exception.NotFoundException;
-import com.ooad.lms.model.MaterialComment;
-import com.ooad.lms.model.MaterialFileMetadata;
-import com.ooad.lms.repository.MaterialFileMetadataRepository;
-import com.ooad.lms.service.FileStorageService;
-import com.ooad.lms.service.MaterialCommentService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +12,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.ooad.lms.dto.MaterialCommentRequest;
+import com.ooad.lms.dto.MaterialReplyRequest;
+import com.ooad.lms.exception.BadRequestException;
+import com.ooad.lms.exception.NotFoundException;
+import com.ooad.lms.model.MaterialComment;
+import com.ooad.lms.model.MaterialFileMetadata;
+import com.ooad.lms.repository.MaterialFileMetadataRepository;
+import com.ooad.lms.service.FileStorageService;
+import com.ooad.lms.service.MaterialCommentService;
 
 @RestController
 @RequestMapping("/api/materials")
@@ -69,9 +71,14 @@ public class MaterialController {
     public MaterialComment replyComment(
             @PathVariable Long materialId,
             @PathVariable Long commentId,
-            @RequestParam Long instructorId,
+            @RequestParam(required = false) Long studentId,
+            @RequestParam(required = false) Long instructorId,
             @RequestBody MaterialReplyRequest request
     ) {
-        return commentService.addReply(instructorId, materialId, commentId, request);
+        Long userId = studentId != null ? studentId : instructorId;
+        if (userId == null) {
+            throw new BadRequestException("A studentId or instructorId is required to reply");
+        }
+        return commentService.addReply(userId, materialId, commentId, request);
     }
 }
