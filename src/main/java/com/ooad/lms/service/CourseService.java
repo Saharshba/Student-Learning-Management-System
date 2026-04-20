@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.ooad.lms.designpattern.strategy.material.MaterialStorageStrategyFactory;
 import com.ooad.lms.dto.CreateAssignmentRequest;
 import com.ooad.lms.dto.CreateCourseRequest;
 import com.ooad.lms.dto.CreateExamRequest;
@@ -34,6 +35,7 @@ public class CourseService {
     private final AssignmentRepository assignmentRepository;
     private final UserService userService;
     private final FileStorageService fileStorageService;
+    private final MaterialStorageStrategyFactory materialStorageStrategyFactory;
     private final MaterialFileMetadataRepository materialFileMetadataRepository;
     private final AssignmentFileMetadataRepository assignmentFileMetadataRepository;
     private final InMemoryDataStore dataStore;
@@ -43,6 +45,7 @@ public class CourseService {
             AssignmentRepository assignmentRepository,
             UserService userService,
             FileStorageService fileStorageService,
+                MaterialStorageStrategyFactory materialStorageStrategyFactory,
                 MaterialFileMetadataRepository materialFileMetadataRepository,
                 AssignmentFileMetadataRepository assignmentFileMetadataRepository,
                 InMemoryDataStore dataStore
@@ -51,6 +54,7 @@ public class CourseService {
         this.assignmentRepository = assignmentRepository;
         this.userService = userService;
         this.fileStorageService = fileStorageService;
+        this.materialStorageStrategyFactory = materialStorageStrategyFactory;
         this.materialFileMetadataRepository = materialFileMetadataRepository;
         this.assignmentFileMetadataRepository = assignmentFileMetadataRepository;
         this.dataStore = dataStore;
@@ -130,7 +134,7 @@ public class CourseService {
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException("Module not found"));
 
-        FileStorageService.StoredFile storedFile = fileStorageService.storePdf(file);
+        FileStorageService.StoredFile storedFile = materialStorageStrategyFactory.store(MaterialType.PDF, file);
         Long materialId = dataStore.nextMaterialId();
         Material material = new Material(
                 materialId,
@@ -219,7 +223,7 @@ public class CourseService {
             throw new BadRequestException("Assignment does not belong to this course");
         }
 
-        FileStorageService.StoredFile storedFile = fileStorageService.storePdf(file);
+        FileStorageService.StoredFile storedFile = materialStorageStrategyFactory.store(MaterialType.PDF, file);
         assignmentFileMetadataRepository.save(new AssignmentFileMetadata(
             assignmentId,
             storedFile.storagePath(),

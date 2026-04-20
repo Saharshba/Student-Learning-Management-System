@@ -1,23 +1,24 @@
 package com.ooad.lms.service;
 
+import org.springframework.stereotype.Service;
+
+import com.ooad.lms.designpattern.factory.user.UserFactoryRegistry;
 import com.ooad.lms.dto.LoginRequest;
 import com.ooad.lms.dto.RegisterRequest;
 import com.ooad.lms.exception.BadRequestException;
 import com.ooad.lms.exception.NotFoundException;
-import com.ooad.lms.model.Administrator;
-import com.ooad.lms.model.Instructor;
 import com.ooad.lms.model.Role;
-import com.ooad.lms.model.Student;
 import com.ooad.lms.model.User;
 import com.ooad.lms.repository.InMemoryDataStore;
-import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
     private final InMemoryDataStore dataStore;
+    private final UserFactoryRegistry userFactoryRegistry;
 
-    public UserService(InMemoryDataStore dataStore) {
+    public UserService(InMemoryDataStore dataStore, UserFactoryRegistry userFactoryRegistry) {
         this.dataStore = dataStore;
+        this.userFactoryRegistry = userFactoryRegistry;
     }
 
     public User register(RegisterRequest request) {
@@ -28,11 +29,7 @@ public class UserService {
         }
 
         long userId = dataStore.nextUserId();
-        User user = switch (request.role()) {
-            case STUDENT -> new Student(userId, request.name(), request.email(), request.password());
-            case INSTRUCTOR -> new Instructor(userId, request.name(), request.email(), request.password());
-            case ADMINISTRATOR -> new Administrator(userId, request.name(), request.email(), request.password());
-        };
+        User user = userFactoryRegistry.createUser(userId, request);
 
         dataStore.users().put(userId, user);
         return user;

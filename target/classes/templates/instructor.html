@@ -18,9 +18,11 @@
         <div class="dash-role-badge instructor-badge">&#128196; Instructor</div>
         <div id="sidebar-user" class="sidebar-user"></div>
         <nav class="dash-nav">
-            <button class="dash-nav-item active" onclick="showTab('courses', this)">&#128218; My Courses</button>
-            <button class="dash-nav-item" onclick="showTab('content', this)">&#43; Add Content</button>
-            <button class="dash-nav-item" onclick="showTab('submissions', this)">&#128221; Submissions</button>
+            <button class="dash-nav-item active" data-tab="courses" onclick="showTab('courses', this)">&#128218; My Courses</button>
+            <button class="dash-nav-item" data-tab="content" onclick="showTab('content', this)">&#43; Add Content</button>
+            <button class="dash-nav-item" data-tab="submissions" onclick="showTab('submissions', this)">&#128221; Submissions</button>
+            <button class="dash-nav-item" data-tab="comments" onclick="showTab('comments', this)">&#128172; Comments</button>
+            <button class="dash-nav-item" data-tab="notifications" onclick="showTab('notifications', this)">&#128276; Notifications <span id="instructor-notif-badge" class="nav-badge hidden">0</span></button>
         </nav>
         <button class="dash-logout" onclick="logout()">&#128275; Sign out</button>
     </aside>
@@ -38,6 +40,22 @@
                 <button class="btn-refresh" onclick="loadCourses()">&#8635; Refresh</button>
             </div>
             <div id="courses-list" class="course-cards"></div>
+
+            <div id="comment-panel" class="comment-panel hidden">
+                <div class="pdf-viewer-header">
+                    <div>
+                        <h3 id="comment-title">Material Comments</h3>
+                        <p class="muted">Review student questions and reply directly.</p>
+                    </div>
+                    <button class="btn-sm btn-danger" onclick="closeCommentPanel()">Close</button>
+                </div>
+                <div class="pdf-viewer-body">
+                    <iframe id="instructor-pdf-viewer" class="pdf-viewer-frame" src="" frameborder="0"></iframe>
+                    <aside class="comment-sidebar">
+                        <div id="comment-list" class="comment-list"></div>
+                    </aside>
+                </div>
+            </div>
         </div>
 
         <!-- Add Content Tab -->
@@ -126,6 +144,30 @@
             </div>
             <div id="submissions-list"></div>
         </div>
+
+        <!-- Comments Tab -->
+        <div id="tab-comments" class="tab-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Comment Center</h2>
+                    <p class="panel-sub">All PDF comments grouped by course, module, and material.</p>
+                </div>
+                <button class="btn-refresh" onclick="loadCommentCenter()">&#8635; Refresh</button>
+            </div>
+            <div id="comment-center-content"></div>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div id="tab-notifications" class="tab-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Notifications</h2>
+                    <p class="panel-sub">New questions and replies from students.</p>
+                </div>
+                <button class="btn-refresh" onclick="loadNotifications()">&#8635; Refresh</button>
+            </div>
+            <div id="notifications-content"></div>
+        </div>
     </main>
 </div>
 
@@ -142,10 +184,12 @@ function showTab(name, btn) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.dash-nav-item').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + name).classList.add('active');
-    btn.classList.add('active');
+    if (btn) btn.classList.add('active');
     if (name === 'courses') loadCourses();
     if (name === 'content') populateFormCourses();
     if (name === 'submissions') populateSubCourses();
+    if (name === 'comments') loadCommentCenter();
+    if (name === 'notifications') loadNotifications();
 }
 
 async function apiFetch(url, opts = {}) {
@@ -154,7 +198,9 @@ async function apiFetch(url, opts = {}) {
         const err = await res.json().catch(() => ({ message: 'Request failed' }));
         throw new Error(err.message || 'Request failed');
     }
-    return res.json();
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
 }
 
 function toast(msg, ok = true) {
@@ -163,6 +209,23 @@ function toast(msg, ok = true) {
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 3200);
+}
+
+function setBadgeCount(elementId, count) {
+    const badge = document.getElementById(elementId);
+    if (!badge) return;
+    const numericCount = Math.max(0, Number(count) || 0);
+    badge.textContent = String(numericCount);
+    badge.classList.toggle('hidden', numericCount === 0);
+}
+
+async function refreshNotificationBadge() {
+    try {
+        const count = await apiFetch(`/api/instructor/${user.userId}/notifications/count`);
+        setBadgeCount('instructor-notif-badge', count);
+    } catch (e) {
+        setBadgeCount('instructor-notif-badge', 0);
+    }
 }
 
 function esc(s) {
@@ -178,14 +241,29 @@ async function loadCourses() {
         myCourses = all.filter(c => String(c.instructorId) === String(user.userId));
         if (!myCourses.length) { el.innerHTML = '<div class="empty-state">No courses assigned to you yet. Ask an admin to assign a course.</div>'; return; }
         el.innerHTML = myCourses.map(c => {
-            const modulesHtml = (c.modules || []).map(m =>
-                `<div class="module-row">
-                    <strong>${esc(m.title)}</strong>
-                    <span class="muted">${(m.materials||[]).length} material(s)</span>
-                </div>`).join('');
+            const modulesHtml = (c.modules || []).map(m => {
+                const materialActions = (m.materials || []).map(mat =>
+                    `<div class="material-actions">
+                        <span>${esc(mat.name)}${mat.fileType === 'PDF' ? ' (PDF)' : ''}</span>
+                        ${mat.fileType === 'PDF' ? `<button class="btn-sm btn-primary" onclick="openPdfViewer(${mat.fileId}, '${escJs(mat.name)}', '${escJs(mat.contentUrl)}')">View</button>` : ''}
+                        <button class="btn-sm btn-blue" onclick="loadMaterialComments(${mat.fileId}, ${c.courseId}, ${m.moduleId})">Comments</button>
+                        <button class="btn-sm btn-danger" onclick="deleteMaterial(${c.courseId}, ${m.moduleId}, ${mat.fileId})">Delete</button>
+                    </div>`
+                ).join('');
+                return `<div class="module-row">
+                    <div>
+                        <strong>${esc(m.title)}</strong>
+                        <span class="muted">${(m.materials||[]).length} material(s)</span>
+                    </div>
+                    ${materialActions ? `<div class="module-materials">${materialActions}</div>` : ''}
+                </div>`;
+            }).join('');
             const assignHtml = (c.assignments || []).map(a =>
                 `<div class="assign-row">
-                    <span class="assign-desc">${esc(a.description)}</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <span><strong>${esc(a.description)}</strong></span>
+                        <button class="btn-sm btn-danger" onclick="deleteAssignment(${c.courseId}, ${a.assignmentId})">Delete</button>
+                    </div>
                     <span class="muted small">Due: ${a.deadline ? new Date(a.deadline).toLocaleDateString() : 'N/A'} &nbsp;|&nbsp; ${a.submissions?.length || 0} submission(s)</span>
                 </div>`).join('');
             return `<div class="dash-course-card">
@@ -376,6 +454,119 @@ async function loadSubmissions() {
     }
 }
 
+function renderCommentReplies(comment) {
+    const replies = (comment.replies && comment.replies.length)
+        ? comment.replies.map(reply => `
+            <div class="comment-reply">
+                <strong>${esc(reply.authorName)}</strong>
+                <span class="muted">${reply.authorRole ? esc(reply.authorRole) : 'Reply'} · ${reply.timestamp ? new Date(reply.timestamp).toLocaleString() : ''}</span>
+                <div>${esc(reply.message)}</div>
+            </div>
+        `).join('')
+        : (comment.reply ? `<div class="comment-reply"><strong>${esc(comment.replyAuthorName)}</strong> <span class="muted">${comment.replyTimestamp ? new Date(comment.replyTimestamp).toLocaleString() : ''}</span><div>${esc(comment.reply)}</div></div>` : '');
+
+    return `
+        <div class="comment-card">
+            <div class="comment-meta">
+                <strong>${esc(comment.authorName)}</strong>
+                <span class="muted">${comment.timestamp ? new Date(comment.timestamp).toLocaleString() : ''}</span>
+            </div>
+            <p>${esc(comment.message)}</p>
+            ${replies}
+            <div class="comment-reply-form">
+                <textarea id="reply-${comment.commentId}" class="comment-input" placeholder="Reply publicly to this question..."></textarea>
+                <button class="btn-sm btn-primary" onclick="replyToComment(${comment.materialId || activeMaterialId}, ${comment.commentId})">Reply</button>
+            </div>
+        </div>`;
+}
+
+function renderCommentThread(thread) {
+    const comments = thread.comments || [];
+    const opener = thread.contentUrl ? `openMaterialFromComments(${thread.materialId}, '${escJs(thread.materialName)}', '${escJs(thread.contentUrl)}')` : `openMaterialFromComments(${thread.materialId}, '${escJs(thread.materialName)}', '')`;
+
+    return `
+        <div class="dash-course-card">
+            <div class="course-card-header">
+                <div>
+                    <span class="pill">Course #${thread.courseId}</span>
+                    <h3>${esc(thread.courseTitle)}</h3>
+                    <p class="muted">Module: ${esc(thread.moduleTitle)} · Material: ${esc(thread.materialName)}</p>
+                </div>
+                <div class="course-card-action">
+                    <button class="btn-sm btn-primary" onclick="${opener}">Open PDF</button>
+                </div>
+            </div>
+            <div class="comment-list">
+                ${comments.map(comment => {
+                    const replies = (comment.replies && comment.replies.length)
+                        ? comment.replies.map(reply => `
+                            <div class="comment-reply">
+                                <strong>${esc(reply.authorName)}</strong>
+                                <span class="muted">${reply.authorRole ? esc(reply.authorRole) : 'Reply'} · ${reply.timestamp ? new Date(reply.timestamp).toLocaleString() : ''}</span>
+                                <div>${esc(reply.message)}</div>
+                            </div>
+                        `).join('')
+                        : (comment.reply ? `<div class="comment-reply"><strong>${esc(comment.replyAuthorName)}</strong> <span class="muted">${comment.replyTimestamp ? new Date(comment.replyTimestamp).toLocaleString() : ''}</span><div>${esc(comment.reply)}</div></div>` : '');
+
+                    return `
+                        <div class="comment-card">
+                            <div class="comment-meta">
+                                <strong>${esc(comment.authorName)}</strong>
+                                <span class="muted">${comment.timestamp ? new Date(comment.timestamp).toLocaleString() : ''}</span>
+                            </div>
+                            <p>${esc(comment.message)}</p>
+                            ${replies}
+                            <div class="comment-reply-form">
+                                <textarea id="reply-${comment.commentId}" class="comment-input" placeholder="Reply publicly to this question..."></textarea>
+                                <button class="btn-sm btn-primary" onclick="replyToComment(${thread.materialId}, ${comment.commentId})">Reply</button>
+                            </div>
+                        </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+}
+
+async function loadCommentCenter() {
+    const el = document.getElementById('comment-center-content');
+    el.innerHTML = '<div class="loading">Loading comment threads…</div>';
+    try {
+        const threads = await apiFetch(`/api/instructor/${user.userId}/comments`);
+        if (!threads.length) {
+            el.innerHTML = '<div class="empty-state">No student questions yet.</div>';
+            return;
+        }
+        el.innerHTML = threads.map(renderCommentThread).join('');
+    } catch (e) {
+        el.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+async function loadNotifications() {
+    const el = document.getElementById('notifications-content');
+    el.innerHTML = '<div class="loading">Loading notifications…</div>';
+    try {
+        const notes = await apiFetch(`/api/instructor/${user.userId}/notifications`);
+        if (!notes.length) {
+            el.innerHTML = '<div class="empty-state">No notifications right now.</div>';
+            await refreshNotificationBadge();
+            return;
+        }
+        el.innerHTML = notes.map(note => {
+            const onclick = note.materialId ? `goToCommentNotification(${note.materialId}, ${note.commentId || 'null'})` : '';
+            const clickable = onclick ? ` style="cursor: pointer; text-decoration: underline;" onclick="${onclick}"` : '';
+            return `<div class="notif-item"${clickable}>&#128276; ${esc(note.title)} - ${esc(note.message)}</div>`;
+        }).join('');
+        await refreshNotificationBadge();
+    } catch (e) {
+        el.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+function goToCommentNotification(materialId, commentId) {
+    activeMaterialId = materialId;
+    showTab('comments', document.querySelector('[data-tab="comments"]'));
+}
+
 async function gradeSubmission(courseId, submissionId) {
     const gradeVal = document.getElementById('grade-' + submissionId).value;
     const feedback = document.getElementById('fb-' + submissionId).value.trim();
@@ -392,6 +583,126 @@ async function gradeSubmission(courseId, submissionId) {
     } catch (e) { toast(e.message, false); }
 }
 
+let activeMaterialId = null;
+
+function escJs(s) {
+    if (!s) return '';
+    return String(s).replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+function openMaterialFromComments(materialId, title, contentUrl) {
+    const coursesButton = document.querySelector('.dash-nav-item[data-tab="courses"]');
+    showTab('courses', coursesButton);
+    openPdfViewer(materialId, title, contentUrl);
+}
+
+function resolveMaterialPdfUrl(materialId, contentUrl) {
+    const fallback = `/api/materials/${materialId}/download`;
+    if (!contentUrl || !String(contentUrl).trim()) return fallback;
+
+    const url = String(contentUrl).trim();
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/api/materials/')) return url;
+
+    // Legacy records may store values like "unit2.pdf" that are not routable.
+    return fallback;
+}
+
+function openPdfViewer(materialId, title, contentUrl) {
+    activeMaterialId = materialId;
+    document.getElementById('comment-title').textContent = title;
+    const src = resolveMaterialPdfUrl(materialId, contentUrl);
+    document.getElementById('instructor-pdf-viewer').src = src;
+    document.getElementById('comment-panel').classList.remove('hidden');
+    loadMaterialComments(materialId);
+}
+
+function closeCommentPanel() {
+    document.getElementById('comment-panel').classList.add('hidden');
+    document.getElementById('comment-list').innerHTML = '';
+    document.getElementById('instructor-pdf-viewer').src = '';
+}
+
+async function loadMaterialComments(materialId, courseId, moduleId) {
+    activeMaterialId = materialId;
+    const list = document.getElementById('comment-list');
+    list.innerHTML = '<div class="loading">Loading comments…</div>';
+    try {
+        const comments = await apiFetch(`/api/materials/${materialId}/comments`);
+        list.innerHTML = comments.length
+            ? comments.map(c => {
+                const replies = (c.replies && c.replies.length)
+                    ? c.replies.map(reply => `
+                        <div class="comment-reply">
+                            <strong>${esc(reply.authorName)}</strong>
+                            <span class="muted">${reply.authorRole ? esc(reply.authorRole) : 'Reply'} · ${reply.timestamp ? new Date(reply.timestamp).toLocaleString() : ''}</span>
+                            <div>${esc(reply.message)}</div>
+                        </div>
+                    `).join('')
+                    : (c.reply ? `<div class="comment-reply"><strong>${esc(c.replyAuthorName)}</strong> <span class="muted">${c.replyTimestamp ? new Date(c.replyTimestamp).toLocaleString() : ''}</span><div>${esc(c.reply)}</div></div>` : '');
+
+                return `
+                <div class="comment-card">
+                    <div class="comment-meta"><strong>${esc(c.authorName)}</strong> <span class="muted">${c.timestamp ? new Date(c.timestamp).toLocaleString() : ''}</span></div>
+                    <p>${esc(c.message)}</p>
+                    ${replies}
+                    <div>
+                        <textarea id="reply-${c.commentId}" class="comment-input" placeholder="Reply publicly to this question..."></textarea>
+                        <button class="btn-sm btn-primary" onclick="replyToComment(${materialId}, ${c.commentId})">Reply</button>
+                    </div>
+                </div>`;
+            }).join('')
+            : '<div class="empty-state">No questions yet for this PDF.</div>';
+    } catch (e) {
+        list.innerHTML = `<div class="empty-state error-state">${e.message}</div>`;
+    }
+}
+
+async function replyToComment(materialId, commentId) {
+    const reply = document.getElementById('reply-' + commentId).value.trim();
+    if (!reply) { toast('Enter a reply before sending.', false); return; }
+    try {
+        await apiFetch(`/api/materials/${materialId}/comments/${commentId}/reply?instructorId=${user.userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reply })
+        });
+        toast('Reply sent!');
+        loadMaterialComments(materialId);
+    } catch (e) {
+        toast(e.message, false);
+    }
+}
+
+async function deleteMaterial(courseId, moduleId, materialId) {
+    if (!confirm('Delete this material? This action cannot be undone.')) return;
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/modules/${moduleId}/materials/${materialId}?instructorId=${user.userId}`, {
+            method: 'DELETE'
+        });
+        toast('Material deleted.');
+        await refreshCourses();
+        await loadCourses();
+        closeCommentPanel();
+    } catch (e) {
+        toast(e.message, false);
+    }
+}
+
+async function deleteAssignment(courseId, assignmentId) {
+    if (!confirm('Delete this assignment? This action cannot be undone.')) return;
+    try {
+        await apiFetch(`/api/instructor/courses/${courseId}/assignments/${assignmentId}?instructorId=${user.userId}`, {
+            method: 'DELETE'
+        });
+        toast('Assignment deleted.');
+        await refreshCourses();
+        await loadCourses();
+    } catch (e) {
+        toast(e.message, false);
+    }
+}
+
 (async function init() {
     const raw = sessionStorage.getItem('lmsUser');
     if (!raw) { location.href = '/login'; return; }
@@ -402,6 +713,7 @@ async function gradeSubmission(courseId, submissionId) {
     }
     document.getElementById('sidebar-user').textContent = user.name;
     await loadCourses();
+    refreshNotificationBadge();
     populateFormCourses();
     populateSubCourses();
 })();
