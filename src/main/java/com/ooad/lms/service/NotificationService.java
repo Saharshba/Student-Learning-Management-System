@@ -6,19 +6,65 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.ooad.lms.designpattern.observer.notification.MaterialCommentNotificationEvent;
+import com.ooad.lms.designpattern.observer.notification.MaterialCommentNotificationEventType;
+import com.ooad.lms.designpattern.observer.notification.MaterialCommentObserver;
 import com.ooad.lms.dto.NotificationDTO;
 import com.ooad.lms.model.UserNotification;
 import com.ooad.lms.repository.InMemoryDataStore;
 import com.ooad.lms.repository.NotificationRepository;
 
 @Service
-public class NotificationService {
+public class NotificationService implements MaterialCommentObserver {
     private final NotificationRepository notificationRepository;
     private final InMemoryDataStore dataStore;
 
     public NotificationService(NotificationRepository notificationRepository, InMemoryDataStore dataStore) {
         this.notificationRepository = notificationRepository;
         this.dataStore = dataStore;
+    }
+
+    @Override
+    public void onMaterialCommentEvent(MaterialCommentNotificationEvent event) {
+        if (event.type() == MaterialCommentNotificationEventType.COMMENT_ASKED) {
+            notifyCommentAsked(
+                    event.instructorId(),
+                    event.commentAuthorId(),
+                    event.commentAuthorName(),
+                    event.materialId(),
+                    event.materialName(),
+                    event.commentId(),
+                    event.message()
+            );
+            return;
+        }
+
+        if (event.type() == MaterialCommentNotificationEventType.INSTRUCTOR_REPLIED) {
+            notifyInstructorReply(
+                    event.commentAuthorId(),
+                    event.commentAuthorName(),
+                    event.replierId(),
+                    event.replierName(),
+                    event.materialId(),
+                    event.materialName(),
+                    event.commentId(),
+                    event.message()
+            );
+            return;
+        }
+
+        if (event.type() == MaterialCommentNotificationEventType.STUDENT_REPLIED) {
+            notifyStudentReply(
+                    event.commentAuthorId(),
+                    event.commentAuthorName(),
+                    event.instructorId(),
+                    event.replierName(),
+                    event.materialId(),
+                    event.materialName(),
+                    event.commentId(),
+                    event.message()
+            );
+        }
     }
 
     public void notifyCommentAsked(Long instructorId, Long studentId, String studentName, Long materialId, String materialName, Long commentId, String message) {

@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.ooad.lms.designpattern.observer.notification.MaterialCommentEventPublisher;
+import com.ooad.lms.designpattern.observer.notification.MaterialCommentNotificationEvent;
 import com.ooad.lms.dto.MaterialCommentRequest;
 import com.ooad.lms.dto.MaterialCommentThreadResponse;
 import com.ooad.lms.dto.MaterialReplyRequest;
@@ -25,18 +27,18 @@ public class MaterialCommentService {
     private final InMemoryDataStore dataStore;
     private final UserService userService;
     private final CourseService courseService;
-    private final NotificationService notificationService;
+    private final MaterialCommentEventPublisher materialCommentEventPublisher;
 
     public MaterialCommentService(MaterialCommentRepository commentRepository,
                                   InMemoryDataStore dataStore,
                                   UserService userService,
                                   CourseService courseService,
-                                  NotificationService notificationService) {
+                                  MaterialCommentEventPublisher materialCommentEventPublisher) {
         this.commentRepository = commentRepository;
         this.dataStore = dataStore;
         this.userService = userService;
         this.courseService = courseService;
-        this.notificationService = notificationService;
+        this.materialCommentEventPublisher = materialCommentEventPublisher;
     }
 
     public List<MaterialComment> getComments(Long materialId) {
@@ -81,7 +83,7 @@ public class MaterialCommentService {
                 LocalDateTime.now()
         );
         MaterialComment saved = commentRepository.save(comment);
-        notificationService.notifyCommentAsked(
+        materialCommentEventPublisher.publish(MaterialCommentNotificationEvent.commentAsked(
                 context.course().getInstructorId(),
                 studentId,
                 student.getName(),
@@ -89,7 +91,7 @@ public class MaterialCommentService {
                 context.material().getName(),
                 commentId,
                 request.message()
-        );
+        ));
         return saved;
     }
 
@@ -121,7 +123,7 @@ public class MaterialCommentService {
         ));
         MaterialComment saved = commentRepository.save(comment);
         if (author.getRole() == Role.INSTRUCTOR) {
-            notificationService.notifyInstructorReply(
+            materialCommentEventPublisher.publish(MaterialCommentNotificationEvent.instructorReplied(
                     comment.getAuthorId(),
                     comment.getAuthorName(),
                     userId,
@@ -130,18 +132,19 @@ public class MaterialCommentService {
                     context.material().getName(),
                     commentId,
                     request.reply()
-            );
+            ));
         } else {
-            notificationService.notifyStudentReply(
+            materialCommentEventPublisher.publish(MaterialCommentNotificationEvent.studentReplied(
                     comment.getAuthorId(),
                     comment.getAuthorName(),
                     userId,
                     author.getName(),
+                context.course().getInstructorId(),
                     materialId,
                     context.material().getName(),
                     commentId,
                     request.reply()
-            );
+            ));
         }
         return saved;
     }

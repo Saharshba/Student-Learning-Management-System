@@ -1,51 +1,76 @@
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\controller\AdminController.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\controller\AuthController.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\controller\InstructorController.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\controller\MaterialController.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\controller\StudentController.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\controller\WebController.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\CreateAssignmentRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\CreateCourseRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\CreateExamRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\CreateModuleRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\GradeSubmissionRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\LoginRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\RegisterRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\SubmissionViewResponse.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\SubmitAssignmentRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\dto\UploadMaterialRequest.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\exception\BadRequestException.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\exception\GlobalExceptionHandler.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\exception\NotFoundException.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Administrator.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Assignment.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\AssignmentFileMetadata.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Course.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Exam.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Instructor.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Material.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\MaterialFileMetadata.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\MaterialType.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Module.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\ProgressTracker.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Role.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Student.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\Submission.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\SubmissionFileMetadata.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\model\User.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\repository\AssignmentFileMetadataRepository.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\repository\AssignmentRepository.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\repository\CourseRepository.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\repository\InMemoryDataStore.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\repository\MaterialFileMetadataRepository.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\repository\SubmissionFileMetadataRepository.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\repository\SubmissionRepository.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\repository\UserRepository.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\service\AdminService.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\service\CourseService.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\service\DataSeeder.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\service\FileStorageService.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\service\InstructorService.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\service\StudentService.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\service\UserService.java
-C:\Users\lenovo\OneDrive\Desktop\OO lab\OOAD PROJECT\src\main\java\com\ooad\lms\StudentLmsApplication.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\controller\AdminController.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\controller\AuthController.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\controller\InstructorController.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\controller\MaterialController.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\controller\StudentController.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\controller\WebController.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\factory\user\AdministratorUserFactory.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\factory\user\InstructorUserFactory.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\factory\user\StudentUserFactory.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\factory\user\UserFactoryRegistry.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\factory\user\UserRoleFactory.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\mvp\homepage\HomePagePresenter.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\mvp\homepage\HomePageView.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\mvp\homepage\SpringModelHomePageView.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\observer\notification\MaterialCommentEventPublisher.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\observer\notification\MaterialCommentNotificationEvent.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\observer\notification\MaterialCommentNotificationEventType.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\observer\notification\MaterialCommentObserver.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\strategy\material\MaterialStorageStrategy.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\strategy\material\MaterialStorageStrategyFactory.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\designpattern\strategy\material\PdfMaterialStorageStrategy.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\CreateAssignmentRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\CreateCourseRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\CreateExamRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\CreateModuleRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\GradeSubmissionRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\LoginRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\MaterialCommentRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\MaterialCommentThreadResponse.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\MaterialReplyRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\NotificationDTO.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\RegisterRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\SubmissionViewResponse.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\SubmitAssignmentRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\dto\UploadMaterialRequest.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\exception\BadRequestException.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\exception\GlobalExceptionHandler.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\exception\NotFoundException.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Administrator.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Assignment.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\AssignmentFileMetadata.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Course.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Exam.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Instructor.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Material.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\MaterialComment.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\MaterialFileMetadata.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\MaterialType.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Module.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\ProgressTracker.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Role.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Student.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\Submission.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\SubmissionFileMetadata.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\User.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\model\UserNotification.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\AssignmentFileMetadataRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\AssignmentRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\CourseRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\InMemoryDataStore.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\MaterialCommentRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\MaterialFileMetadataRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\NotificationRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\SubmissionFileMetadataRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\SubmissionRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\repository\UserRepository.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\AdminService.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\CourseService.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\DataSeeder.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\FileStorageService.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\InstructorService.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\MaterialCommentService.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\NotificationService.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\StudentService.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\service\UserService.java
+C:\Users\Saharsh\Documents\College\6th_Sem\OOAD\testingggg\Student-Learning-Management-System\src\main\java\com\ooad\lms\StudentLmsApplication.java

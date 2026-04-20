@@ -12,11 +12,13 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ooad.lms.dto.NotificationDTO;
 import com.ooad.lms.dto.SubmissionViewResponse;
 import com.ooad.lms.dto.SubmitAssignmentRequest;
+import com.ooad.lms.designpattern.strategy.material.MaterialStorageStrategyFactory;
 import com.ooad.lms.exception.BadRequestException;
 import com.ooad.lms.exception.NotFoundException;
 import com.ooad.lms.model.Assignment;
 import com.ooad.lms.model.Course;
 import com.ooad.lms.model.MaterialFileMetadata;
+import com.ooad.lms.model.MaterialType;
 import com.ooad.lms.model.ProgressTracker;
 import com.ooad.lms.model.Role;
 import com.ooad.lms.model.Student;
@@ -38,6 +40,7 @@ public class StudentService {
     private final UserService userService;
     private final CourseService courseService;
     private final FileStorageService fileStorageService;
+    private final MaterialStorageStrategyFactory materialStorageStrategyFactory;
     private final MaterialFileMetadataRepository materialFileMetadataRepository;
     private final SubmissionFileMetadataRepository submissionFileMetadataRepository;
     private final NotificationService notificationService;
@@ -50,6 +53,7 @@ public class StudentService {
             UserService userService,
             CourseService courseService,
             FileStorageService fileStorageService,
+                MaterialStorageStrategyFactory materialStorageStrategyFactory,
                 MaterialFileMetadataRepository materialFileMetadataRepository,
                 SubmissionFileMetadataRepository submissionFileMetadataRepository,
                 NotificationService notificationService
@@ -61,6 +65,7 @@ public class StudentService {
         this.userService = userService;
         this.courseService = courseService;
         this.fileStorageService = fileStorageService;
+        this.materialStorageStrategyFactory = materialStorageStrategyFactory;
         this.materialFileMetadataRepository = materialFileMetadataRepository;
         this.submissionFileMetadataRepository = submissionFileMetadataRepository;
         this.notificationService = notificationService;
@@ -88,7 +93,7 @@ public class StudentService {
 
     public Submission submitAssignmentPdf(Long studentId, Long assignmentId, MultipartFile file, String content) {
         Assignment assignment = validateStudentCanSubmit(studentId, assignmentId);
-        FileStorageService.StoredFile storedFile = fileStorageService.storePdf(file);
+        FileStorageService.StoredFile storedFile = materialStorageStrategyFactory.store(MaterialType.PDF, file);
 
         // Store only the student's optional notes as content; the actual PDF is tracked via SubmissionFileMetadata
         String submissionText = (content != null && !content.isBlank()) ? content : "";
