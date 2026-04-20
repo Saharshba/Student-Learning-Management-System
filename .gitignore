@@ -1,0 +1,13 @@
+target/
+uploads/
+.tools/
+data/store.ser
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.idea/
+.vscode/
+*.tmp
+.DS_Store
